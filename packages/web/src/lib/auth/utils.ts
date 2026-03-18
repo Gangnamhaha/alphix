@@ -23,6 +23,12 @@ export async function requireAuth() {
 
 export async function requireAdmin() {
   const user = await requireAuth()
+  const metadataRole = user.app_metadata?.role ?? user.user_metadata?.role
+
+  if (metadataRole === 'admin') {
+    return user
+  }
+
   const supabase = await createServerSupabaseClient()
   const { data } = await supabase.from('users').select('role').eq('id', user.id).single()
 

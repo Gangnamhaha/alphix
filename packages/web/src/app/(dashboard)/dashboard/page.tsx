@@ -1,5 +1,15 @@
+import Link from 'next/link'
+
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table'
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from '@/components/ui/table'
+import { getUser } from '@/lib/auth/utils'
 
 const summary = [
   { label: '총 자산', value: '₩52,430,000', change: '+2.4%' },
@@ -14,9 +24,22 @@ const recentTrades = [
   { time: '13:41', symbol: 'SK하이닉스', side: '매수', qty: 7, price: '₩182,300', pnl: '+₩22,900' },
 ]
 
-export default function DashboardPage() {
+export default async function DashboardPage() {
+  const user = await getUser()
+  const role = user?.app_metadata?.role ?? user?.user_metadata?.role
+  const isAdmin = role === 'admin'
+
   return (
     <div className="space-y-6">
+      {isAdmin ? (
+        <Link
+          href="/admin"
+          className="flex items-center gap-2 rounded-lg border border-dashed border-primary/40 bg-primary/5 px-4 py-3 text-sm font-medium text-primary hover:bg-primary/10 transition-colors"
+        >
+          🔧 관리자 콘솔로 이동
+        </Link>
+      ) : null}
+
       <section className="grid grid-cols-1 gap-4 md:grid-cols-2 xl:grid-cols-4">
         {summary.map((item) => (
           <Card key={item.label}>
@@ -68,7 +91,11 @@ export default function DashboardPage() {
                     <TableCell>{trade.side}</TableCell>
                     <TableCell>{trade.qty}</TableCell>
                     <TableCell>{trade.price}</TableCell>
-                    <TableCell className={trade.pnl.startsWith('+') ? 'text-green-600' : 'text-red-600'}>{trade.pnl}</TableCell>
+                    <TableCell
+                      className={trade.pnl.startsWith('+') ? 'text-green-600' : 'text-red-600'}
+                    >
+                      {trade.pnl}
+                    </TableCell>
                   </TableRow>
                 ))}
               </TableBody>
