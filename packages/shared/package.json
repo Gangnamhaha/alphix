@@ -1,0 +1,21 @@
+{
+  "name": "@alphix/shared",
+  "version": "0.0.1",
+  "private": true,
+  "main": "./src/index.ts",
+  "types": "./src/index.ts",
+  "scripts": {
+    "build": "tsc",
+    "test": "echo 'no tests yet'",
+    "lint": "tsc --noEmit"
+  },
+  "devDependencies": {
+    "@types/bcryptjs": "^3.0.0",
+    "@types/node": "^25.5.0",
+    "typescript": "^5"
+  },
+  "dependencies": {
+    "@supabase/supabase-js": "^2.99.2",
+    "bcryptjs": "^3.0.3"
+  }
+}

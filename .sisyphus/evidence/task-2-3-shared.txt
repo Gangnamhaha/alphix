@@ -1,0 +1,6 @@
+Tasks 2+3: Supabase schema + Shared types
+bun install: SUCCESS
+bun run build: SUCCESS
+Tables: 9 (all with RLS)
+Types: BrokerAdapter, Strategy, BacktestConfig, User, OHLCV, etc.
+Constants: brokers, strategies, pricing
