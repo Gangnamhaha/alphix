@@ -333,7 +333,7 @@ Max Concurrent: 15 (Wave 3)
   - Files: 전체 루트 + packages/*/
   - Pre-commit: `bun run build`
 
-- [ ] 2. Supabase 프로젝트 셋업 (DB 스키마 + RLS)
+- [x] 2. Supabase 프로젝트 셋업 (DB 스키마 + RLS)
 
   **What to do**:
   - `packages/shared/src/db/` 에 Supabase 스키마 정의
@@ -413,7 +413,7 @@ Max Concurrent: 15 (Wave 3)
   - Files: `packages/shared/src/db/`
   - Pre-commit: `bun test packages/shared/`
 
-- [ ] 3. Shared 패키지 — 타입, 인터페이스, 상수 정의
+- [x] 3. Shared 패키지 — 타입, 인터페이스, 상수 정의
 
   **What to do**:
   - `packages/shared/src/types/` 에 핵심 타입 정의:
@@ -491,7 +491,7 @@ Max Concurrent: 15 (Wave 3)
   - Files: `packages/shared/src/types/`, `packages/shared/src/constants/`
   - Pre-commit: `bun test packages/shared/`
 
-- [ ] 4. shadcn/ui + Tailwind CSS + 디자인 시스템
+- [x] 4. shadcn/ui + Tailwind CSS + 디자인 시스템
 
   **What to do**:
   - `packages/web`에 Tailwind CSS v4 설정
@@ -575,7 +575,7 @@ Max Concurrent: 15 (Wave 3)
   - Message: `chore(web): setup shadcn/ui, tailwind, and design system`
   - Files: `packages/web/src/components/`, `packages/web/src/styles/`
 
-- [ ] 5. 코드 품질 도구 (ESLint + Prettier + Husky + Commitlint)
+- [x] 5. 코드 품질 도구 (ESLint + Prettier + Husky + Commitlint)
 
   **What to do**:
   - ESLint 설정 (TypeScript + React + Next.js 규칙)
@@ -631,7 +631,7 @@ Max Concurrent: 15 (Wave 3)
   - Message: `chore(web): setup shadcn/ui, tailwind, eslint, prettier`
   - Files: 루트 설정 파일들
 
-- [ ] 6. 암호화 유틸리티 (AES-256-GCM + bcrypt)
+- [x] 6. 암호화 유틸리티 (AES-256-GCM + bcrypt)
 
   **What to do**:
   - `packages/shared/src/crypto/`:
@@ -706,7 +706,7 @@ Max Concurrent: 15 (Wave 3)
   - Message: `feat(auth): supabase auth with encryption utils`
   - Files: `packages/shared/src/crypto/`
 
-- [ ] 7. Supabase Auth + 미들웨어 + 보호 라우트
+- [x] 7. Supabase Auth + 미들웨어 + 보호 라우트
 
   **What to do**:
   - Supabase Auth 설정:
