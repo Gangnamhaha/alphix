@@ -1,0 +1,26 @@
+import type { MetadataRoute } from 'next'
+
+export default function manifest(): MetadataRoute.Manifest {
+  return {
+    name: 'Alphix',
+    short_name: 'Alphix',
+    description: '한국 주식 자동매매 플랫폼',
+    start_url: '/',
+    display: 'standalone',
+    background_color: '#0b1220',
+    theme_color: '#0ea5e9',
+    lang: 'ko-KR',
+    icons: [
+      {
+        src: '/icon-192.png',
+        sizes: '192x192',
+        type: 'image/png',
+      },
+      {
+        src: '/icon-512.png',
+        sizes: '512x512',
+        type: 'image/png',
+      },
+    ],
+  }
+}

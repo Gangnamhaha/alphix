@@ -1241,7 +1241,7 @@ Max Concurrent: 15 (Wave 3)
 
 ### Wave 3: Engine Modules + Web Pages
 
-- [ ] 16. 실시간 데이터 피드 + WebSocket 매니저
+- [x] 16. 실시간 데이터 피드 + WebSocket 매니저
 
   **What to do**:
   - `packages/trading-engine/src/data/`:
@@ -1295,7 +1295,7 @@ Max Concurrent: 15 (Wave 3)
 
   **Commit**: YES (groups with T17-T22)
 
-- [ ] 17. 주문 관리 시스템 (OMS)
+- [x] 17. 주문 관리 시스템 (OMS)
 
   **What to do**:
   - `packages/trading-engine/src/order/`:
@@ -1347,7 +1347,7 @@ Max Concurrent: 15 (Wave 3)
 
   **Commit**: YES (groups with T16, T18-T22)
 
-- [ ] 18. 리스크 관리 + 회로차단기
+- [x] 18. 리스크 관리 + 회로차단기
 
   **What to do**:
   - `packages/trading-engine/src/risk/`:
@@ -1394,7 +1394,7 @@ Max Concurrent: 15 (Wave 3)
 
   **Commit**: YES (groups with T16-T17, T19-T22)
 
-- [ ] 19. 페이퍼 트레이딩 엔진
+- [x] 19. 페이퍼 트레이딩 엔진
 
   **What to do**:
   - `packages/trading-engine/src/paper/`:
@@ -1449,7 +1449,7 @@ Max Concurrent: 15 (Wave 3)
 
   **Commit**: YES (groups with T16-T18, T20-T22)
 
-- [ ] 20. 백테스팅 엔진 (고급)
+- [x] 20. 백테스팅 엔진 (고급)
 
   **What to do**:
   - `packages/trading-engine/src/backtest/`:
@@ -1509,7 +1509,7 @@ Max Concurrent: 15 (Wave 3)
 
   **Commit**: YES (groups with T16-T19, T21-T22)
 
-- [ ] 21. 자동매매 데몬
+- [x] 21. 자동매매 데몬
 
   **What to do**:
   - `packages/trading-engine/src/daemon/`:
@@ -1572,7 +1572,7 @@ Max Concurrent: 15 (Wave 3)
 
   **Commit**: YES (groups with T16-T20, T22)
 
-- [ ] 22. 알림 시스템 + 텔레그램 봇
+- [x] 22. 알림 시스템 + 텔레그램 봇
 
   **What to do**:
   - `packages/trading-engine/src/notifications/`:
@@ -1628,7 +1628,7 @@ Max Concurrent: 15 (Wave 3)
 
   **Commit**: YES (groups with T16-T21)
 
-- [ ] 23. 랜딩 페이지
+- [x] 23. 랜딩 페이지
 
   **What to do**:
   - `packages/web/src/app/(landing)/page.tsx`:
@@ -1681,7 +1681,7 @@ Max Concurrent: 15 (Wave 3)
 
   **Commit**: YES (groups with T24-T30)
 
-- [ ] 24. 인증 페이지 (로그인/회원가입/비밀번호 찾기)
+- [x] 24. 인증 페이지 (로그인/회원가입/비밀번호 찾기)
 
   **What to do**:
   - `packages/web/src/app/(auth)/login/page.tsx`
@@ -1728,7 +1728,7 @@ Max Concurrent: 15 (Wave 3)
 
   **Commit**: YES (groups with T23, T25-T30)
 
-- [ ] 25. 대시보드 페이지
+- [x] 25. 대시보드 페이지
 
   **What to do**:
   - `packages/web/src/app/(dashboard)/dashboard/page.tsx`:
@@ -1775,7 +1775,7 @@ Max Concurrent: 15 (Wave 3)
 
   **Commit**: YES (groups with T23-T24, T26-T30)
 
-- [ ] 26. 전략 관리 페이지
+- [x] 26. 전략 관리 페이지
 
   **What to do**:
   - `packages/web/src/app/(dashboard)/strategies/page.tsx`:
@@ -1823,7 +1823,7 @@ Max Concurrent: 15 (Wave 3)
 
   **Commit**: YES (groups with T23-T25, T27-T30)
 
-- [ ] 27. 백테스팅 페이지
+- [x] 27. 백테스팅 페이지
 
   **What to do**:
   - `packages/web/src/app/(dashboard)/backtest/page.tsx`:
@@ -1873,7 +1873,7 @@ Max Concurrent: 15 (Wave 3)
 
   **Commit**: YES (groups with T23-T26, T28-T30)
 
-- [ ] 28. 거래 내역 + 포트폴리오 페이지
+- [x] 28. 거래 내역 + 포트폴리오 페이지
 
   **What to do**:
   - `packages/web/src/app/(dashboard)/portfolio/page.tsx`:
@@ -1916,7 +1916,7 @@ Max Concurrent: 15 (Wave 3)
 
   **Commit**: YES (groups with T23-T27, T29-T30)
 
-- [ ] 29. 설정 페이지
+- [x] 29. 설정 페이지
 
   **What to do**:
   - `packages/web/src/app/(dashboard)/settings/page.tsx`:
@@ -1962,7 +1962,7 @@ Max Concurrent: 15 (Wave 3)
 
   **Commit**: YES (groups with T23-T28, T30)
 
-- [ ] 30. 관리자 패널
+- [x] 30. 관리자 패널
 
   **What to do**:
   - `packages/web/src/app/(admin)/admin/page.tsx`:
