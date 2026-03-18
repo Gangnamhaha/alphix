@@ -787,7 +787,7 @@ Max Concurrent: 15 (Wave 3)
 
 ### Wave 2: Trading Engine Core
 
-- [ ] 8. KIS 국내주식 브로커 어댑터
+- [x] 8. KIS 국내주식 브로커 어댑터
 
   **What to do**:
   - `packages/trading-engine/src/broker/kis/`:
@@ -868,7 +868,7 @@ Max Concurrent: 15 (Wave 3)
   - Message: `feat(broker): add 6 broker adapters (KIS/Alpaca/Kiwoom/Binance/Upbit)`
   - Files: `packages/trading-engine/src/broker/kis/`
 
-- [ ] 9. KIS 해외주식 (미국) 브로커 어댑터
+- [x] 9. KIS 해외주식 (미국) 브로커 어댑터
 
   **What to do**:
   - `packages/trading-engine/src/broker/kis-overseas/`:
@@ -918,7 +918,7 @@ Max Concurrent: 15 (Wave 3)
 
   **Commit**: YES (groups with T8, T10-T13)
 
-- [ ] 10. Alpaca 브로커 어댑터
+- [x] 10. Alpaca 브로커 어댑터
 
   **What to do**:
   - `packages/trading-engine/src/broker/alpaca/`:
@@ -961,7 +961,7 @@ Max Concurrent: 15 (Wave 3)
 
   **Commit**: YES (groups with T8-T9, T11-T13)
 
-- [ ] 11. 키움증권 브로커 어댑터 + Windows 프록시
+- [x] 11. 키움증권 브로커 어댑터 + Windows 프록시
 
   **What to do**:
   - `packages/trading-engine/src/broker/kiwoom/`:
@@ -1005,7 +1005,7 @@ Max Concurrent: 15 (Wave 3)
 
   **Commit**: YES (groups with T8-T10, T12-T13)
 
-- [ ] 12. Binance 브로커 어댑터
+- [x] 12. Binance 브로커 어댑터
 
   **What to do**:
   - `packages/trading-engine/src/broker/binance/`:
@@ -1052,7 +1052,7 @@ Max Concurrent: 15 (Wave 3)
 
   **Commit**: YES (groups with T8-T11, T13)
 
-- [ ] 13. Upbit 브로커 어댑터
+- [x] 13. Upbit 브로커 어댑터
 
   **What to do**:
   - `packages/trading-engine/src/broker/upbit/`:
@@ -1098,7 +1098,7 @@ Max Concurrent: 15 (Wave 3)
 
   **Commit**: YES (groups with T8-T12)
 
-- [ ] 14. 전략 엔진 — MA 크로스오버 + RSI + 볼린저밴드
+- [x] 14. 전략 엔진 — MA 크로스오버 + RSI + 볼린저밴드
 
   **What to do**:
   - `packages/trading-engine/src/strategy/`:
@@ -1175,7 +1175,7 @@ Max Concurrent: 15 (Wave 3)
   - Message: `feat(strategy): add 6 strategies (MA/RSI/BB/MACD/Grid/AI)`
   - Files: `packages/trading-engine/src/strategy/`
 
-- [ ] 15. 전략 엔진 — MACD + 그리드 + AI 분석
+- [x] 15. 전략 엔진 — MACD + 그리드 + AI 분석
 
   **What to do**:
   - `packages/trading-engine/src/strategy/`:

@@ -1,0 +1,62 @@
+Task 16-22 Trading Engine Modules Evidence
+
+Date: 2026-03-18
+Workspace: /Users/cpeoy/projects/alphix
+
+Implemented modules under packages/trading-engine/src:
+
+1) data/
+- websocket-manager.ts: multi-connection manager with heartbeat, exponential backoff reconnect, and EventEmitter hooks (onData/onError/onReconnect)
+- data-feed.ts: broker subscription manager + payload normalization to MarketData via broker parsers
+- index.ts
+
+2) order/
+- order-manager.ts: create->validate->execute->track pipeline, idempotency key dedupe, status transitions (PENDING/SUBMITTED/FILLED/REJECTED/CANCELLED)
+- order-validator.ts: quantity limits, balance check, market-open check, circuit-breaker check
+- index.ts
+
+3) risk/
+- risk-manager.ts: daily loss limit (-5% default), max position size/count, concentration constraints
+- circuit-breaker.ts: trigger lock and manual reset
+- position-sizer.ts: fixed-ratio sizing
+- index.ts
+
+4) paper/
+- paper-engine.ts: virtual balance/positions, market/limit fill simulation, fee/slippage handling, 30-day mandatory period status
+- index.ts
+
+5) backtest/
+- backtest-engine.ts: strategy + OHLCV historical simulation with commission/slippage
+- performance.ts: total return, CAGR, max drawdown, Sharpe, win rate, profit factor
+- index.ts
+
+6) daemon/
+- trading-daemon.ts: per-strategy run cycle (data -> signal -> order), market-session gating, strategy-level error isolation
+- schedule-manager.ts: KR/US/Crypto schedule support
+- index.ts
+
+7) notifications/
+- notification-manager.ts: console/webhook channels, queue + batch flush processing
+- telegram-bot.ts: mock command handlers (/status, /positions, /stop, /start)
+- index.ts
+
+Updated exports:
+- packages/trading-engine/src/index.ts now exports data/order/risk/paper/backtest/daemon/notifications modules.
+
+Tests added (TDD style) in required structure:
+- src/data/__tests__/websocket-manager.test.ts
+- src/order/__tests__/order-manager.test.ts
+- src/risk/__tests__/risk-manager.test.ts
+- src/risk/__tests__/circuit-breaker.test.ts
+- src/paper/__tests__/paper-engine.test.ts
+- src/backtest/__tests__/backtest-engine.test.ts
+- src/backtest/__tests__/performance.test.ts
+- src/daemon/__tests__/trading-daemon.test.ts
+- src/notifications/__tests__/notification-manager.test.ts
+
+Verification:
+- lsp diagnostics on packages/trading-engine/src (extension .ts): 0 diagnostics
+- command: cd packages/trading-engine && bun test
+  result: 82 pass, 0 fail
+- command: bun run build (repo root)
+  result: turbo build success, @alphix/trading-engine build success
