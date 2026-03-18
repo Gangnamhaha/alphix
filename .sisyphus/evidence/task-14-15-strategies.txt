@@ -1,0 +1,5 @@
+Tasks 14-15: 6 strategy engines
+Strategies: MA, RSI, Bollinger, MACD, Grid, AI
+Indicators: SMA, EMA, RSI, BollingerBands, MACD
+Tests: 40 passed, 0 failed
+Build: SUCCESS
