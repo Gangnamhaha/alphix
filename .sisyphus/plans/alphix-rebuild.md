@@ -2005,7 +2005,7 @@ Max Concurrent: 15 (Wave 3)
 
 ### Wave 4: API Routes + Integration
 
-- [ ] 31. API 라우트 — 인증 & 사용자
+- [x] 31. API 라우트 — 인증 & 사용자
 
   **What to do**:
   - `packages/web/src/app/api/auth/`:
@@ -2051,7 +2051,7 @@ Max Concurrent: 15 (Wave 3)
 
   **Commit**: YES (groups with T32-T34)
 
-- [ ] 32. API 라우트 — 트레이딩 & 주문
+- [x] 32. API 라우트 — 트레이딩 & 주문
 
   **What to do**:
   - `packages/web/src/app/api/trading/`:
@@ -2096,7 +2096,7 @@ Max Concurrent: 15 (Wave 3)
 
   **Commit**: YES (groups with T31, T33-T34)
 
-- [ ] 33. API 라우트 — 전략 관리
+- [x] 33. API 라우트 — 전략 관리
 
   **What to do**:
   - `packages/web/src/app/api/strategies/`:
@@ -2137,7 +2137,7 @@ Max Concurrent: 15 (Wave 3)
 
   **Commit**: YES (groups with T31-T32, T34)
 
-- [ ] 34. API 라우트 — 백테스팅 & 데이터
+- [x] 34. API 라우트 — 백테스팅 & 데이터
 
   **What to do**:
   - `packages/web/src/app/api/backtest/`:
@@ -2178,7 +2178,7 @@ Max Concurrent: 15 (Wave 3)
 
   **Commit**: YES (groups with T31-T33)
 
-- [ ] 35. 토스페이먼츠 결제 통합
+- [x] 35. 토스페이먼츠 결제 통합
 
   **What to do**:
   - `packages/web/src/app/api/payments/`:
@@ -2240,7 +2240,7 @@ Max Concurrent: 15 (Wave 3)
 
   **Commit**: YES (groups with T36-T37)
 
-- [ ] 36. PWA 설정 (매니페스트, 서비스 워커, 푸시 알림)
+- [x] 36. PWA 설정 (매니페스트, 서비스 워커, 푸시 알림)
 
   **What to do**:
   - `packages/web/public/manifest.json`: 앱 이름, 아이콘, 테마 색상
@@ -2283,7 +2283,7 @@ Max Concurrent: 15 (Wave 3)
 
   **Commit**: YES (groups with T35, T37)
 
-- [ ] 37. 모니터링 & 알림 대시보드
+- [x] 37. 모니터링 & 알림 대시보드
 
   **What to do**:
   - `packages/web/src/app/(dashboard)/monitoring/page.tsx`:
@@ -2324,7 +2324,7 @@ Max Concurrent: 15 (Wave 3)
 
   **Commit**: YES (groups with T35-T36)
 
-- [ ] 38. 프론트엔드-백엔드 통합 연결
+- [x] 38. 프론트엔드-백엔드 통합 연결
 
   **What to do**:
   - 모든 웹 페이지 ↔ API 라우트 연결:
@@ -2396,19 +2396,19 @@ Max Concurrent: 15 (Wave 3)
 
 ## Final Verification Wave (MANDATORY)
 
-- [ ] F1. **Plan Compliance Audit** — `oracle`
+- [x] F1. **Plan Compliance Audit** — `oracle`
   Read the plan end-to-end. For each "Must Have": verify implementation exists (read file, curl endpoint, run command). For each "Must NOT Have": search codebase for forbidden patterns — reject with file:line if found. Check evidence files exist in .sisyphus/evidence/. Compare deliverables against plan.
   Output: `Must Have [N/N] | Must NOT Have [N/N] | Tasks [N/N] | VERDICT: APPROVE/REJECT`
 
-- [ ] F2. **Code Quality Review** — `unspecified-high`
+- [x] F2. **Code Quality Review** — `unspecified-high`
   Run `bun run build` + linter + `bun run test`. Review all changed files for: `as any`/`@ts-ignore`, empty catches, console.log in prod, commented-out code, unused imports. Check AI slop: excessive comments, over-abstraction, generic names (data/result/item/temp). **TDD compliance 검증 방법** (git log가 아닌): (1) 모든 엔진 모듈(`packages/trading-engine/src/`)에 대응하는 `.test.ts` 파일 존재 확인 (glob 패턴 매칭), (2) `bun test --coverage` 실행 → 엔진 모듈 커버리지 80%+ 확인, (3) 테스트 파일이 구현체를 import하고 있는지 확인 (테스트가 실제 코드를 검증). Git history 기반 증빙은 사용하지 않음 (wave 단위 커밋에서는 불가).
   Output: `Build [PASS/FAIL] | Lint [PASS/FAIL] | Tests [N pass/N fail] | Coverage [N%] | Files [N clean/N issues] | VERDICT`
 
-- [ ] F3. **Real Manual QA** — `unspecified-high` (+ `playwright` skill)
+- [x] F3. **Real Manual QA** — `unspecified-high` (+ `playwright` skill)
   Start from clean state (`bun install && npx supabase start && bun run dev`). 환경: `.env.test` 사용 (로컬 Supabase + mock 브로커). Execute EVERY QA scenario from EVERY task. Test full user flows: signup → dashboard → create strategy → run backtest → enable paper trading → monitor. 브로커 연결은 **mock 모드**로 검증 (실제 API 호출 없음). 토스페이먼츠는 **테스트 모드**로 검증 (`.env.test`의 테스트 키 사용). 텔레그램 봇은 **mock 모드** (실제 봇 토큰 불필요). PWA install 검증. Save to `.sisyphus/evidence/final-qa/`.
   Output: `Scenarios [N/N pass] | Integration [N/N] | Edge Cases [N tested] | VERDICT`
 
-- [ ] F4. **Scope Fidelity Check** — `deep`
+- [x] F4. **Scope Fidelity Check** — `deep`
   For each task: read "What to do", read actual diff (git log/diff). Verify 1:1 — everything in spec was built (no missing), nothing beyond spec was built (no creep). Check "Must NOT do" compliance. Detect cross-task contamination. Flag unaccounted changes.
   Output: `Tasks [N/N compliant] | Contamination [CLEAN/N issues] | Unaccounted [CLEAN/N files] | VERDICT`
 
