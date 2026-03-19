@@ -1,5 +1,6 @@
 import { redirect } from 'next/navigation'
 
+import { getUserRoleFromMetadata, isAdminRole } from './roles'
 import { createServerSupabaseClient } from '../supabase/server'
 
 export async function getUser() {
@@ -23,18 +24,11 @@ export async function requireAuth() {
 
 export async function requireAdmin() {
   const user = await requireAuth()
-  const metadataRole = user.app_metadata?.role ?? user.user_metadata?.role
+  const metadataRole = getUserRoleFromMetadata(user)
 
-  if (metadataRole === 'admin') {
+  if (isAdminRole(metadataRole)) {
     return user
   }
 
-  const supabase = await createServerSupabaseClient()
-  const { data } = await supabase.from('users').select('role').eq('id', user.id).single()
-
-  if (data?.role !== 'admin') {
-    redirect('/dashboard')
-  }
-
-  return user
+  redirect('/dashboard')
 }

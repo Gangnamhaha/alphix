@@ -1,5 +1,13 @@
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table'
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from '@/components/ui/table'
+import { requireAdmin } from '@/lib/auth/utils'
 
 const stats = [
   { label: '총 사용자', value: '3,428명' },
@@ -9,13 +17,39 @@ const stats = [
 ]
 
 const users = [
-  { id: 'U-10291', email: 'trader1@alphix.ai', plan: 'Pro', status: 'Active', joined: '2026-01-11' },
-  { id: 'U-10420', email: 'beta.user@alphix.ai', plan: 'Basic', status: 'Active', joined: '2026-02-07' },
-  { id: 'U-10498', email: 'swing@alphix.ai', plan: 'Free', status: 'Pending', joined: '2026-02-28' },
-  { id: 'U-10534', email: 'kim.alpha@alphix.ai', plan: 'Pro', status: 'Suspended', joined: '2026-03-02' },
+  {
+    id: 'U-10291',
+    email: 'trader1@alphix.ai',
+    plan: 'Pro',
+    status: 'Active',
+    joined: '2026-01-11',
+  },
+  {
+    id: 'U-10420',
+    email: 'beta.user@alphix.ai',
+    plan: 'Basic',
+    status: 'Active',
+    joined: '2026-02-07',
+  },
+  {
+    id: 'U-10498',
+    email: 'swing@alphix.ai',
+    plan: 'Free',
+    status: 'Pending',
+    joined: '2026-02-28',
+  },
+  {
+    id: 'U-10534',
+    email: 'kim.alpha@alphix.ai',
+    plan: 'Pro',
+    status: 'Suspended',
+    joined: '2026-03-02',
+  },
 ]
 
-export default function AdminPage() {
+export default async function AdminPage() {
+  await requireAdmin()
+
   return (
     <div className="space-y-6 p-6">
       <h1 className="text-2xl font-semibold">관리자 콘솔</h1>

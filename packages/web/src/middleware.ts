@@ -1,6 +1,8 @@
 import { createServerClient } from '@supabase/ssr'
 import { NextResponse, type NextRequest } from 'next/server'
 
+import { getUserRoleFromMetadata, isAdminRole } from '@/lib/auth/roles'
+
 const protectedRoutes = [
   '/dashboard',
   '/settings',
@@ -14,7 +16,7 @@ const adminRoutes = ['/admin']
 const authRoutes = ['/login', '/signup', '/forgot-password']
 
 function matchesRoute(pathname: string, routes: string[]) {
-  return routes.some((route) => pathname.startsWith(route))
+  return routes.some((route) => pathname === route || pathname.startsWith(`${route}/`))
 }
 
 export async function middleware(request: NextRequest) {
@@ -36,7 +38,7 @@ export async function middleware(request: NextRequest) {
           })
         },
       },
-    }
+    },
   )
 
   const {
@@ -49,13 +51,15 @@ export async function middleware(request: NextRequest) {
   }
 
   if (user && matchesRoute(pathname, authRoutes)) {
-    return NextResponse.redirect(new URL('/dashboard', request.url))
+    const role = getUserRoleFromMetadata(user)
+    const destination = isAdminRole(role) ? '/admin' : '/dashboard'
+    return NextResponse.redirect(new URL(destination, request.url))
   }
 
   if (user && matchesRoute(pathname, adminRoutes)) {
-    const role = user.app_metadata?.role ?? user.user_metadata?.role
+    const role = getUserRoleFromMetadata(user)
 
-    if (role !== 'admin') {
+    if (!isAdminRole(role)) {
       return NextResponse.redirect(new URL('/dashboard', request.url))
     }
   }

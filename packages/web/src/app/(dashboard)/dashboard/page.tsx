@@ -9,6 +9,7 @@ import {
   TableHeader,
   TableRow,
 } from '@/components/ui/table'
+import { getUserRoleFromMetadata, isAdminRole } from '@/lib/auth/roles'
 import { getUser } from '@/lib/auth/utils'
 
 const summary = [
@@ -26,8 +27,8 @@ const recentTrades = [
 
 export default async function DashboardPage() {
   const user = await getUser()
-  const role = user?.app_metadata?.role ?? user?.user_metadata?.role
-  const isAdmin = role === 'admin'
+  const role = getUserRoleFromMetadata(user)
+  const isAdmin = isAdminRole(role)
 
   return (
     <div className="space-y-6">

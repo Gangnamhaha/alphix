@@ -1,5 +1,7 @@
 import Link from 'next/link'
 
+import { LogoutButton } from '@/components/auth/logout-button'
+import { getUserRoleFromMetadata, isAdminRole } from '@/lib/auth/roles'
 import { createServerSupabaseClient } from '@/lib/supabase/server'
 
 export async function MainLayout({ children }: { children: React.ReactNode }) {
@@ -8,8 +10,8 @@ export async function MainLayout({ children }: { children: React.ReactNode }) {
     data: { user },
   } = await supabase.auth.getUser()
 
-  const role = user?.app_metadata?.role ?? user?.user_metadata?.role
-  const isAdmin = role === 'admin'
+  const role = getUserRoleFromMetadata(user)
+  const isAdmin = isAdminRole(role)
 
   return (
     <div className="flex h-screen bg-background">
@@ -35,15 +37,45 @@ export async function MainLayout({ children }: { children: React.ReactNode }) {
             ⚙️ 설정
           </Link>
           {isAdmin ? (
-            <Link href="/admin" className="block px-3 py-2 rounded-md hover:bg-accent text-sm">
-              🔧 관리자
-            </Link>
+            <>
+              <Link href="/admin" className="block px-3 py-2 rounded-md hover:bg-accent text-sm">
+                🔧 관리자
+              </Link>
+              <Link
+                href="/admin/users"
+                className="block px-6 py-1.5 rounded-md hover:bg-accent text-xs text-muted-foreground"
+              >
+                사용자 관리
+              </Link>
+              <Link
+                href="/admin/subscriptions"
+                className="block px-6 py-1.5 rounded-md hover:bg-accent text-xs text-muted-foreground"
+              >
+                구독 관리
+              </Link>
+            </>
           ) : null}
         </nav>
       </aside>
       <div className="flex-1 flex flex-col min-w-0">
         <header className="h-14 border-b flex items-center justify-between px-4 bg-card">
-          <h2 className="font-semibold">Dashboard</h2>
+          <div className="flex items-center gap-3">
+            <h2 className="font-semibold">Dashboard</h2>
+            {isAdmin ? (
+              <Link
+                href="/admin"
+                className="inline-flex rounded-md border px-2 py-1 text-xs text-muted-foreground md:hidden"
+              >
+                관리자
+              </Link>
+            ) : null}
+          </div>
+          <div className="flex items-center gap-3">
+            <span className="hidden text-xs text-muted-foreground md:inline">
+              {user?.email ?? 'guest@alphix.ai'}
+            </span>
+            <LogoutButton />
+          </div>
         </header>
         <main className="flex-1 overflow-auto p-6">{children}</main>
       </div>
