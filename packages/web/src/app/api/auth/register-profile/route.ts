@@ -19,7 +19,20 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'Valid email is required' }, { status: 400 })
     }
 
-    const supabase = createAdminSupabaseClient()
+    let supabase
+
+    try {
+      supabase = createAdminSupabaseClient()
+    } catch {
+      return NextResponse.json(
+        {
+          error: 'Profile sync is unavailable',
+          code: 'PROFILE_SYNC_UNAVAILABLE',
+        },
+        { status: 503 },
+      )
+    }
+
     const { error } = await supabase.from('users').upsert(
       {
         email,
@@ -30,11 +43,17 @@ export async function POST(request: NextRequest) {
     )
 
     if (error) {
-      return NextResponse.json({ error: error.message }, { status: 500 })
+      return NextResponse.json(
+        { error: error.message, code: 'PROFILE_SYNC_FAILED' },
+        { status: 500 },
+      )
     }
 
     return NextResponse.json({ success: true })
   } catch {
-    return NextResponse.json({ error: 'Something went wrong' }, { status: 500 })
+    return NextResponse.json(
+      { error: 'Something went wrong', code: 'PROFILE_SYNC_UNKNOWN' },
+      { status: 500 },
+    )
   }
 }

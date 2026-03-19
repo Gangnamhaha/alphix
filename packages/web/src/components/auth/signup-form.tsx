@@ -19,6 +19,22 @@ export function SignupForm() {
   const [error, setError] = useState<string | null>(null)
   const [success, setSuccess] = useState<string | null>(null)
 
+  const proceedAfterSignup = (hasSession: boolean, profileSyncDeferred: boolean) => {
+    if (hasSession) {
+      const destination = profileSyncDeferred ? '/dashboard?profile=deferred' : '/dashboard'
+      router.replace(destination)
+      router.refresh()
+      return
+    }
+
+    const loginQuery = profileSyncDeferred
+      ? '/login?signup=success&profile=deferred'
+      : '/login?signup=success'
+    setSuccess('회원가입이 완료되었습니다. 이메일 인증 후 로그인해 주세요.')
+    router.replace(loginQuery)
+    router.refresh()
+  }
+
   const handleSubmit = async (event: FormSubmitEvent) => {
     event.preventDefault()
     setError(null)
@@ -55,19 +71,22 @@ export function SignupForm() {
       })
 
       if (!profileResponse.ok) {
-        setError('가입 프로필 저장 중 문제가 발생했습니다. 잠시 후 다시 시도해 주세요.')
+        const profilePayload = (await profileResponse.json().catch(() => null)) as {
+          code?: string
+        } | null
+        const profileSyncDeferred =
+          profileResponse.status === 503 && profilePayload?.code === 'PROFILE_SYNC_UNAVAILABLE'
+
+        if (!profileSyncDeferred) {
+          setError('가입 프로필 저장 중 문제가 발생했습니다. 잠시 후 다시 시도해 주세요.')
+          return
+        }
+
+        proceedAfterSignup(Boolean(data.session), true)
         return
       }
 
-      if (data.session) {
-        router.replace('/dashboard')
-        router.refresh()
-        return
-      }
-
-      setSuccess('회원가입이 완료되었습니다. 이메일 인증 후 로그인해 주세요.')
-      router.replace('/login?signup=success')
-      router.refresh()
+      proceedAfterSignup(Boolean(data.session), false)
     } catch {
       setError('회원가입 중 문제가 발생했습니다. 잠시 후 다시 시도해 주세요.')
     } finally {
