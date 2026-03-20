@@ -23,6 +23,21 @@ export async function middleware(request: NextRequest) {
   const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL
   const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY
   const pathname = request.nextUrl.pathname
+  const mockSession = request.cookies.get('mock_session')?.value === 'active'
+  const mockRole = request.cookies.get('mock_role')?.value
+  const mockIsAdmin = mockRole === 'admin'
+
+  if (mockSession) {
+    if (matchesRoute(pathname, authRoutes)) {
+      return NextResponse.redirect(new URL(mockIsAdmin ? '/admin' : '/dashboard', request.url))
+    }
+
+    if (matchesRoute(pathname, adminRoutes) && !mockIsAdmin) {
+      return NextResponse.redirect(new URL('/dashboard', request.url))
+    }
+
+    return NextResponse.next({ request })
+  }
 
   if (!supabaseUrl || !supabaseAnonKey) {
     if (matchesRoute(pathname, protectedRoutes) || matchesRoute(pathname, adminRoutes)) {

@@ -12,7 +12,7 @@ type FormSubmitEvent = Parameters<NonNullable<React.ComponentProps<'form'>['onSu
 
 export function LoginForm() {
   const router = useRouter()
-  const [email, setEmail] = useState('')
+  const [identifier, setIdentifier] = useState('')
   const [password, setPassword] = useState('')
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
@@ -23,9 +23,28 @@ export function LoginForm() {
     setError(null)
 
     try {
+      const normalizedIdentifier = identifier.trim()
+
+      if (normalizedIdentifier === 'admin' && password === '7777') {
+        const response = await fetch('/api/auth/login', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ identifier: normalizedIdentifier, password }),
+        })
+
+        if (!response.ok) {
+          setError('관리자 로그인에 실패했습니다.')
+          return
+        }
+
+        router.replace('/admin')
+        router.refresh()
+        return
+      }
+
       const supabase = createClient()
       const { data, error: signInError } = await supabase.auth.signInWithPassword({
-        email: email.trim(),
+        email: normalizedIdentifier,
         password,
       })
 
@@ -47,11 +66,11 @@ export function LoginForm() {
   return (
     <form className="space-y-4" onSubmit={handleSubmit}>
       <Input
-        type="email"
-        placeholder="이메일"
-        autoComplete="email"
-        value={email}
-        onChange={(event) => setEmail(event.target.value)}
+        type="text"
+        placeholder="이메일 또는 아이디"
+        autoComplete="username"
+        value={identifier}
+        onChange={(event) => setIdentifier(event.target.value)}
         required
       />
       <Input

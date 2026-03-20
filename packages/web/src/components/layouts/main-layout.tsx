@@ -1,17 +1,32 @@
 import Link from 'next/link'
 
 import { LogoutButton } from '@/components/auth/logout-button'
+import { getMockSessionState } from '@/lib/auth/mock-session'
 import { getUserRoleFromMetadata, isAdminRole } from '@/lib/auth/roles'
 import { createServerSupabaseClient } from '@/lib/supabase/server'
 
 export async function MainLayout({ children }: { children: React.ReactNode }) {
-  const supabase = await createServerSupabaseClient()
-  const {
-    data: { user },
-  } = await supabase.auth.getUser()
+  const mockSession = await getMockSessionState()
+  const hasSupabaseEnv = Boolean(
+    process.env.NEXT_PUBLIC_SUPABASE_URL && process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY,
+  )
 
-  const role = getUserRoleFromMetadata(user)
-  const isAdmin = isAdminRole(role)
+  let userEmail = 'guest@alphix.ai'
+  let isAdmin = false
+
+  if (mockSession.isAuthenticated) {
+    isAdmin = mockSession.role === 'admin'
+    userEmail = isAdmin ? 'admin@local.alphix' : 'mock.user@local.alphix'
+  } else if (hasSupabaseEnv) {
+    const supabase = await createServerSupabaseClient()
+    const {
+      data: { user },
+    } = await supabase.auth.getUser()
+
+    const role = getUserRoleFromMetadata(user)
+    isAdmin = isAdminRole(role)
+    userEmail = user?.email ?? 'guest@alphix.ai'
+  }
 
   return (
     <div className="flex h-screen bg-background">
@@ -71,9 +86,7 @@ export async function MainLayout({ children }: { children: React.ReactNode }) {
             ) : null}
           </div>
           <div className="flex items-center gap-3">
-            <span className="hidden text-xs text-muted-foreground md:inline">
-              {user?.email ?? 'guest@alphix.ai'}
-            </span>
+            <span className="hidden text-xs text-muted-foreground md:inline">{userEmail}</span>
             <LogoutButton />
           </div>
         </header>

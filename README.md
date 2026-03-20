@@ -36,6 +36,22 @@ bun run build
 bun run test
 ```
 
+## Auto Deployment
+
+Production auto deployment is configured via GitHub Actions:
+
+- Workflow: `.github/workflows/deploy-production.yml`
+- Trigger: push to `main` (and manual trigger via `workflow_dispatch`)
+- Target: Vercel production deployment for `packages/web`
+
+Required GitHub repository secrets:
+
+- `VERCEL_TOKEN`
+- `VERCEL_ORG_ID`
+- `VERCEL_PROJECT_ID`
+
+If these secrets are missing, deployment job will fail.
+
 ## Auth and Admin
 
 - Login page: `/login`
