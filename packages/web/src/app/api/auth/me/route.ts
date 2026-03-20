@@ -3,6 +3,8 @@ import { NextRequest, NextResponse } from 'next/server'
 export async function GET(request: NextRequest) {
   try {
     const session = request.cookies.get('mock_session')
+    const role = request.cookies.get('mock_role')?.value
+    const email = request.cookies.get('mock_email')?.value
 
     if (!session) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
@@ -13,9 +15,9 @@ export async function GET(request: NextRequest) {
       data: {
         user: {
           id: 'user_mock_001',
-          email: 'mock.user@alphix.kr',
+          email: email ?? 'mock.user@alphix.kr',
           name: 'Mock Trader',
-          role: 'user',
+          role: role === 'admin' ? 'admin' : 'user',
         },
       },
     })

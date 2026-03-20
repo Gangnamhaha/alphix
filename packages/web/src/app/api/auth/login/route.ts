@@ -1,5 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 
+import { ensureExecutionRunning } from '@/lib/runtime/execution-session'
+
 const emailPattern = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
 
 interface LoginBody {
@@ -17,6 +19,8 @@ export async function POST(request: NextRequest) {
     const loginId = identifier ?? email
 
     if (loginId === 'admin' && password === '7777') {
+      ensureExecutionRunning('admin@local.alphix')
+
       const response = NextResponse.json({
         success: true,
         data: {
@@ -44,6 +48,13 @@ export async function POST(request: NextRequest) {
         maxAge: 60 * 60 * 24,
       })
 
+      response.cookies.set('mock_email', 'admin@local.alphix', {
+        httpOnly: true,
+        sameSite: 'lax',
+        path: '/',
+        maxAge: 60 * 60 * 24,
+      })
+
       return response
     }
 
@@ -54,6 +65,8 @@ export async function POST(request: NextRequest) {
     if (!password || password.length < 8) {
       return NextResponse.json({ error: 'Password must be at least 8 characters' }, { status: 400 })
     }
+
+    ensureExecutionRunning(email)
 
     const response = NextResponse.json({
       success: true,
@@ -76,6 +89,13 @@ export async function POST(request: NextRequest) {
     })
 
     response.cookies.set('mock_role', 'user', {
+      httpOnly: true,
+      sameSite: 'lax',
+      path: '/',
+      maxAge: 60 * 60 * 24,
+    })
+
+    response.cookies.set('mock_email', email, {
       httpOnly: true,
       sameSite: 'lax',
       path: '/',

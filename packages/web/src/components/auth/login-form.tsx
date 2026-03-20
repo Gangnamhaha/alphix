@@ -17,6 +17,34 @@ export function LoginForm() {
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
 
+  const isLocalDevHost =
+    typeof window !== 'undefined' &&
+    (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1')
+
+  const loginWithMockApi = async (normalizedIdentifier: string) => {
+    const response = await fetch('/api/auth/login', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        identifier: normalizedIdentifier,
+        email: normalizedIdentifier.includes('@') ? normalizedIdentifier : undefined,
+        password,
+      }),
+    })
+
+    if (!response.ok) {
+      return false
+    }
+
+    const payload = (await response.json().catch(() => null)) as {
+      data?: { user?: { role?: string } }
+    } | null
+    const role = payload?.data?.user?.role
+    router.replace(role === 'admin' ? '/admin' : '/dashboard')
+    router.refresh()
+    return true
+  }
+
   const handleSubmit = async (event: FormSubmitEvent) => {
     event.preventDefault()
     setLoading(true)
@@ -49,6 +77,14 @@ export function LoginForm() {
       })
 
       if (signInError) {
+        if (isLocalDevHost) {
+          const mockSuccess = await loginWithMockApi(normalizedIdentifier)
+
+          if (mockSuccess) {
+            return
+          }
+        }
+
         setError(signInError.message)
         return
       }

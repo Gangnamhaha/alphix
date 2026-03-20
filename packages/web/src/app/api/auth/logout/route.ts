@@ -1,7 +1,14 @@
 import { NextRequest, NextResponse } from 'next/server'
 
-export async function POST(_request: NextRequest) {
+import { stopExecution } from '@/lib/runtime/execution-session'
+
+export async function POST(request: NextRequest) {
   try {
+    const email = request.cookies.get('mock_email')?.value
+    if (email) {
+      stopExecution(email, 'logout')
+    }
+
     const response = NextResponse.json({
       success: true,
       data: { message: 'Logged out successfully' },
@@ -15,6 +22,13 @@ export async function POST(_request: NextRequest) {
     })
 
     response.cookies.set('mock_role', '', {
+      httpOnly: true,
+      sameSite: 'lax',
+      path: '/',
+      maxAge: 0,
+    })
+
+    response.cookies.set('mock_email', '', {
       httpOnly: true,
       sameSite: 'lax',
       path: '/',

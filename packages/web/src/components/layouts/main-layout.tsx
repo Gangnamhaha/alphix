@@ -1,5 +1,6 @@
 import Link from 'next/link'
 
+import { ActivityTracker } from '@/components/activity/activity-tracker'
 import { LogoutButton } from '@/components/auth/logout-button'
 import { getMockSessionState } from '@/lib/auth/mock-session'
 import { getUserRoleFromMetadata, isAdminRole } from '@/lib/auth/roles'
@@ -13,10 +14,12 @@ export async function MainLayout({ children }: { children: React.ReactNode }) {
 
   let userEmail = 'guest@alphix.ai'
   let isAdmin = false
+  let isAuthenticated = false
 
   if (mockSession.isAuthenticated) {
+    isAuthenticated = true
     isAdmin = mockSession.role === 'admin'
-    userEmail = isAdmin ? 'admin@local.alphix' : 'mock.user@local.alphix'
+    userEmail = mockSession.email ?? (isAdmin ? 'admin@local.alphix' : 'mock.user@local.alphix')
   } else if (hasSupabaseEnv) {
     const supabase = await createServerSupabaseClient()
     const {
@@ -24,6 +27,7 @@ export async function MainLayout({ children }: { children: React.ReactNode }) {
     } = await supabase.auth.getUser()
 
     const role = getUserRoleFromMetadata(user)
+    isAuthenticated = Boolean(user)
     isAdmin = isAdminRole(role)
     userEmail = user?.email ?? 'guest@alphix.ai'
   }
@@ -73,6 +77,9 @@ export async function MainLayout({ children }: { children: React.ReactNode }) {
         </nav>
       </aside>
       <div className="flex-1 flex flex-col min-w-0">
+        {isAuthenticated ? (
+          <ActivityTracker userKey={userEmail.toLowerCase()} isAdmin={isAdmin} />
+        ) : null}
         <header className="h-14 border-b flex items-center justify-between px-4 bg-card">
           <div className="flex items-center gap-3">
             <h2 className="font-semibold">Dashboard</h2>
@@ -87,7 +94,7 @@ export async function MainLayout({ children }: { children: React.ReactNode }) {
           </div>
           <div className="flex items-center gap-3">
             <span className="hidden text-xs text-muted-foreground md:inline">{userEmail}</span>
-            <LogoutButton />
+            <LogoutButton userKey={isAuthenticated ? userEmail.toLowerCase() : undefined} />
           </div>
         </header>
         <main className="flex-1 overflow-auto p-6">{children}</main>

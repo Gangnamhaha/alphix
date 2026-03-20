@@ -1,7 +1,14 @@
 import { NextRequest, NextResponse } from 'next/server'
 
-export async function GET(_request: NextRequest) {
+import { ensureExecutionRunning, getExecutionState } from '@/lib/runtime/execution-session'
+
+export async function GET(request: NextRequest) {
   try {
+    const userKey = request.cookies.get('mock_email')?.value?.trim().toLowerCase()
+    const execution = userKey
+      ? (getExecutionState(userKey) ?? ensureExecutionRunning(userKey))
+      : null
+
     return NextResponse.json({
       success: true,
       data: {
@@ -13,6 +20,19 @@ export async function GET(_request: NextRequest) {
           marketData: 'healthy',
           scheduler: 'healthy',
         },
+        execution: execution
+          ? {
+              running: execution.running,
+              startedAt: execution.startedAt,
+              lastSeenAt: execution.lastSeenAt,
+              stopReason: execution.stopReason,
+            }
+          : {
+              running: false,
+              startedAt: null,
+              lastSeenAt: null,
+              stopReason: 'not_authenticated',
+            },
         checkedAt: new Date().toISOString(),
       },
     })

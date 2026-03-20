@@ -6,7 +6,11 @@ import { useRouter } from 'next/navigation'
 import { Button } from '@/components/ui/button'
 import { createClient } from '@/lib/supabase/client'
 
-export function LogoutButton() {
+interface LogoutButtonProps {
+  userKey?: string
+}
+
+export function LogoutButton({ userKey }: LogoutButtonProps) {
   const router = useRouter()
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
@@ -29,6 +33,14 @@ export function LogoutButton() {
       if (!response.ok) {
         setError('서버 로그아웃에 실패했습니다. 다시 시도해 주세요.')
         return
+      }
+
+      if (userKey) {
+        await fetch('/api/runtime/execution', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ userKey, action: 'stop' }),
+        })
       }
 
       router.replace('/login')
