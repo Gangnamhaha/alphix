@@ -17,9 +17,9 @@ jobs:
   deploy:
     runs-on: ubuntu-latest
     env:
-      VERCEL_TOKEN: ${{ secrets.VERCEL_TOKEN }}
       VERCEL_ORG_ID: ${{ secrets.VERCEL_ORG_ID }}
       VERCEL_PROJECT_ID: ${{ secrets.VERCEL_PROJECT_ID }}
+      VERCEL_AUTH_JSON: ${{ secrets.VERCEL_AUTH_JSON }}
 
     steps:
       - name: Checkout
@@ -36,11 +36,14 @@ jobs:
       - name: Build monorepo
         run: bun run build
 
+      - name: Prepare Vercel auth
+        run: mkdir -p "$RUNNER_TEMP/vercel-auth" && printf '%s' "$VERCEL_AUTH_JSON" > "$RUNNER_TEMP/vercel-auth/auth.json"
+
       - name: Pull Vercel environment
-        run: bunx vercel pull --yes --environment=production --token "$VERCEL_TOKEN"
+        run: bunx vercel pull --yes --environment=production -Q "$RUNNER_TEMP/vercel-auth"
 
       - name: Build Vercel artifact
-        run: bunx vercel build --prod --token "$VERCEL_TOKEN"
+        run: bunx vercel build --prod -Q "$RUNNER_TEMP/vercel-auth"
 
       - name: Deploy to Vercel Production
-        run: bunx vercel deploy --prebuilt --prod --token "$VERCEL_TOKEN"
+        run: bunx vercel deploy --prebuilt --prod -Q "$RUNNER_TEMP/vercel-auth"
