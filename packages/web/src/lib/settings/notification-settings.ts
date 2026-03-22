@@ -37,7 +37,7 @@ export interface NotificationSettingsIdentity {
 }
 
 interface ResolvedUser {
-  userId: number | null
+  userId: string | null
   reason: NotificationWebhookCapabilityReason | null
 }
 
@@ -148,7 +148,7 @@ async function resolveUserIdByEmail(email: string): Promise<ResolvedUser> {
 }
 
 async function resolveNotificationSettingsByUserId(
-  userId: number,
+  userId: string,
 ): Promise<ResolvedNotificationSettings> {
   const supabase = createAdminSupabaseClient()
   const { data, error } = await supabase

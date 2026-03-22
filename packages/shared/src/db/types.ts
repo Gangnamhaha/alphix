@@ -212,19 +212,19 @@ export interface Database {
       notification_settings: {
         Row: {
           id: number
-          user_id: number | null
+          user_id: string | null
           encrypted_slack_webhook: string | null
           updated_at: string | null
         }
         Insert: {
           id?: number
-          user_id?: number | null
+          user_id?: string | null
           encrypted_slack_webhook?: string | null
           updated_at?: string
         }
         Update: {
           id?: number
-          user_id?: number | null
+          user_id?: string | null
           encrypted_slack_webhook?: string | null
           updated_at?: string
         }
