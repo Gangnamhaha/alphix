@@ -1,14 +1,31 @@
 import type { User } from '@supabase/supabase-js'
 import { NextRequest, NextResponse } from 'next/server'
 
+import {
+  getNotificationWebhookSnapshot,
+  NotificationSettingsServiceError,
+  updateSlackWebhook,
+} from '@/lib/settings/notification-settings'
 import { createServerSupabaseClient } from '@/lib/supabase/server'
 
-type NotificationCapabilityReason = 'MOCK_SESSION_LOCAL_ONLY' | 'WEBHOOK_STORAGE_UNAVAILABLE'
+type NotificationCapabilityReason =
+  | 'MOCK_SESSION_LOCAL_ONLY'
+  | 'ADMIN_ENV_UNAVAILABLE'
+  | 'ADMIN_CLIENT_UNAVAILABLE'
+  | 'ENCRYPTION_KEY_UNAVAILABLE'
+  | 'USER_ROW_NOT_FOUND'
+  | 'MULTIPLE_USER_ROWS'
+  | 'MULTIPLE_NOTIFICATION_SETTINGS'
+
+interface NotificationSecretState {
+  isSet: boolean
+  maskedValue: string | null
+}
 
 interface NotificationPreferences {
   emailEnabled: boolean
   lossLimitPercent: number | null
-  slackWebhookConfigured: boolean
+  slackWebhook: NotificationSecretState
 }
 
 interface NotificationCapabilities {
@@ -70,16 +87,6 @@ function validateLossLimitPercent(value: number | null) {
   return null
 }
 
-function getNotificationCapabilities(isMockSession: boolean): NotificationCapabilities {
-  return {
-    canPatch: true,
-    canSaveWebhook: false,
-    reasons: isMockSession
-      ? ['MOCK_SESSION_LOCAL_ONLY', 'WEBHOOK_STORAGE_UNAVAILABLE']
-      : ['WEBHOOK_STORAGE_UNAVAILABLE'],
-  }
-}
-
 function buildResponse(settings: NotificationPreferences, capabilities: NotificationCapabilities) {
   return NextResponse.json({
     success: true,
@@ -95,7 +102,10 @@ function getNotificationPreferencesFromMetadata(user: User): NotificationPrefere
     return {
       emailEnabled: true,
       lossLimitPercent: defaultLossLimitPercent,
-      slackWebhookConfigured: false,
+      slackWebhook: {
+        isSet: false,
+        maskedValue: null,
+      },
     }
   }
 
@@ -105,7 +115,10 @@ function getNotificationPreferencesFromMetadata(user: User): NotificationPrefere
     return {
       emailEnabled: true,
       lossLimitPercent: defaultLossLimitPercent,
-      slackWebhookConfigured: false,
+      slackWebhook: {
+        isSet: false,
+        maskedValue: null,
+      },
     }
   }
 
@@ -115,7 +128,10 @@ function getNotificationPreferencesFromMetadata(user: User): NotificationPrefere
       rawPreferences.lossLimitPercent,
       defaultLossLimitPercent,
     ),
-    slackWebhookConfigured: false,
+    slackWebhook: {
+      isSet: false,
+      maskedValue: null,
+    },
   }
 }
 
@@ -130,14 +146,22 @@ export async function GET(request: NextRequest) {
         request.cookies.get('mock_notifications_loss_limit_percent')?.value,
         defaultLossLimitPercent,
       )
+      const webhookSnapshot = await getNotificationWebhookSnapshot({
+        email: request.cookies.get('mock_email')?.value ?? 'mock.user@alphix.kr',
+        isMockSession: true,
+      })
 
       return buildResponse(
         {
           emailEnabled,
           lossLimitPercent,
-          slackWebhookConfigured: false,
+          slackWebhook: webhookSnapshot.slackWebhook,
         },
-        getNotificationCapabilities(true),
+        {
+          canPatch: true,
+          canSaveWebhook: webhookSnapshot.capabilities.canSaveWebhook,
+          reasons: webhookSnapshot.capabilities.reasons,
+        },
       )
     }
 
@@ -150,13 +174,26 @@ export async function GET(request: NextRequest) {
       data: { user },
     } = await supabase.auth.getUser()
 
-    if (!user) {
+    if (!user?.email) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
     }
 
+    const metadataPreferences = getNotificationPreferencesFromMetadata(user)
+    const webhookSnapshot = await getNotificationWebhookSnapshot({
+      email: user.email,
+      isMockSession: false,
+    })
+
     return buildResponse(
-      getNotificationPreferencesFromMetadata(user),
-      getNotificationCapabilities(false),
+      {
+        ...metadataPreferences,
+        slackWebhook: webhookSnapshot.slackWebhook,
+      },
+      {
+        canPatch: true,
+        canSaveWebhook: webhookSnapshot.capabilities.canSaveWebhook,
+        reasons: webhookSnapshot.capabilities.reasons,
+      },
     )
   } catch {
     return NextResponse.json({ error: 'Something went wrong' }, { status: 500 })
@@ -173,6 +210,8 @@ export async function PATCH(request: NextRequest) {
 
     const emailEnabled = readBoolean(body.emailEnabled, true)
     const lossLimitPercent = parseLossLimitPercent(body.lossLimitPercent, defaultLossLimitPercent)
+    const slackWebhook =
+      typeof body.slackWebhook === 'string' ? body.slackWebhook.trim() : undefined
     const validationError = validateLossLimitPercent(lossLimitPercent)
 
     if (validationError) {
@@ -182,13 +221,29 @@ export async function PATCH(request: NextRequest) {
     const isMockSession = request.cookies.get('mock_session')?.value === 'active'
 
     if (isMockSession) {
+      if (slackWebhook) {
+        return NextResponse.json(
+          { error: 'Slack webhook save is unavailable in mock session' },
+          { status: 403 },
+        )
+      }
+
+      const webhookSnapshot = await getNotificationWebhookSnapshot({
+        email: request.cookies.get('mock_email')?.value ?? 'mock.user@alphix.kr',
+        isMockSession: true,
+      })
+
       const response = buildResponse(
         {
           emailEnabled,
           lossLimitPercent,
-          slackWebhookConfigured: false,
+          slackWebhook: webhookSnapshot.slackWebhook,
         },
-        getNotificationCapabilities(true),
+        {
+          canPatch: true,
+          canSaveWebhook: webhookSnapshot.capabilities.canSaveWebhook,
+          reasons: webhookSnapshot.capabilities.reasons,
+        },
       )
 
       response.cookies.set('mock_notifications_email_enabled', String(emailEnabled), {
@@ -221,11 +276,22 @@ export async function PATCH(request: NextRequest) {
       data: { user },
     } = await supabase.auth.getUser()
 
-    if (!user) {
+    if (!user?.email) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
     }
 
     const existingMetadata = isRecord(user.user_metadata) ? user.user_metadata : {}
+
+    if (slackWebhook) {
+      await updateSlackWebhook(
+        {
+          email: user.email,
+          isMockSession: false,
+        },
+        slackWebhook,
+      )
+    }
+
     const { error } = await supabase.auth.updateUser({
       data: {
         ...existingMetadata,
@@ -240,15 +306,28 @@ export async function PATCH(request: NextRequest) {
       return NextResponse.json({ error: error.message }, { status: 500 })
     }
 
+    const webhookSnapshot = await getNotificationWebhookSnapshot({
+      email: user.email,
+      isMockSession: false,
+    })
+
     return buildResponse(
       {
         emailEnabled,
         lossLimitPercent,
-        slackWebhookConfigured: false,
+        slackWebhook: webhookSnapshot.slackWebhook,
       },
-      getNotificationCapabilities(false),
+      {
+        canPatch: true,
+        canSaveWebhook: webhookSnapshot.capabilities.canSaveWebhook,
+        reasons: webhookSnapshot.capabilities.reasons,
+      },
     )
-  } catch {
+  } catch (error) {
+    if (error instanceof NotificationSettingsServiceError) {
+      return NextResponse.json({ error: error.message }, { status: error.status })
+    }
+
     return NextResponse.json({ error: 'Something went wrong' }, { status: 500 })
   }
 }
