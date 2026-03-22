@@ -209,6 +209,26 @@ export interface Database {
           current_period_end?: string | null
         }
       }
+      notification_settings: {
+        Row: {
+          id: number
+          user_id: number | null
+          encrypted_slack_webhook: string | null
+          updated_at: string | null
+        }
+        Insert: {
+          id?: number
+          user_id?: number | null
+          encrypted_slack_webhook?: string | null
+          updated_at?: string
+        }
+        Update: {
+          id?: number
+          user_id?: number | null
+          encrypted_slack_webhook?: string | null
+          updated_at?: string
+        }
+      }
       notifications: {
         Row: {
           id: number
