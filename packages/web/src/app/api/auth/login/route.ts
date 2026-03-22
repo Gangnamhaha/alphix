@@ -1,5 +1,8 @@
+import { createServerClient } from '@supabase/ssr'
 import { NextRequest, NextResponse } from 'next/server'
 
+import { getUserRoleFromMetadata } from '@/lib/auth/roles'
+import { isLocalAuthHost } from '@/lib/auth/mock-auth'
 import { ensureExecutionRunning } from '@/lib/runtime/execution-session'
 
 const emailPattern = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
@@ -10,6 +13,65 @@ interface LoginBody {
   password?: string
 }
 
+function hasPublicSupabaseEnv() {
+  return Boolean(process.env.NEXT_PUBLIC_SUPABASE_URL && process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY)
+}
+
+function clearMockCookies(response: NextResponse) {
+  for (const name of ['mock_session', 'mock_role', 'mock_email', 'mock_name']) {
+    response.cookies.set(name, '', {
+      httpOnly: true,
+      sameSite: 'lax',
+      path: '/',
+      maxAge: 0,
+    })
+  }
+}
+
+function createMockLoginResponse(email: string, role: 'admin' | 'user', name: string) {
+  ensureExecutionRunning(email)
+
+  const response = NextResponse.json({
+    success: true,
+    data: {
+      user: {
+        id: role === 'admin' ? 'user_mock_admin' : 'user_mock_001',
+        email,
+        name,
+        role,
+      },
+      accessToken: role === 'admin' ? 'mock_access_token_admin' : 'mock_access_token',
+    },
+  })
+
+  response.cookies.set('mock_session', 'active', {
+    httpOnly: true,
+    sameSite: 'lax',
+    path: '/',
+    maxAge: 60 * 60 * 24,
+  })
+  response.cookies.set('mock_role', role, {
+    httpOnly: true,
+    sameSite: 'lax',
+    path: '/',
+    maxAge: 60 * 60 * 24,
+  })
+  response.cookies.set('mock_email', email, {
+    httpOnly: true,
+    sameSite: 'lax',
+    path: '/',
+    maxAge: 60 * 60 * 24,
+  })
+  response.cookies.set('mock_name', name, {
+    httpOnly: true,
+    sameSite: 'lax',
+    path: '/',
+    maxAge: 60 * 60 * 24,
+  })
+
+  return response
+}
+
 export async function POST(request: NextRequest) {
   try {
     const body = (await request.json()) as LoginBody
@@ -17,52 +79,37 @@ export async function POST(request: NextRequest) {
     const email = body.email?.trim()
     const password = body.password?.trim()
     const loginId = identifier ?? email
+    const allowMockAuth = isLocalAuthHost(
+      request.headers.get('x-forwarded-host') ?? request.headers.get('host'),
+    )
 
-    if (loginId === 'admin' && password === '7777') {
-      ensureExecutionRunning('admin@local.alphix')
-
-      const response = NextResponse.json({
-        success: true,
-        data: {
-          user: {
-            id: 'user_mock_admin',
-            email: 'admin@local.alphix',
-            name: 'Local Admin',
-            role: 'admin',
+    if (hasPublicSupabaseEnv()) {
+      const existingSessionClient = createServerClient(
+        process.env.NEXT_PUBLIC_SUPABASE_URL!,
+        process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
+        {
+          cookies: {
+            getAll() {
+              return request.cookies.getAll()
+            },
+            setAll() {},
           },
-          accessToken: 'mock_access_token_admin',
         },
-      })
+      )
+      const {
+        data: { user: existingUser },
+      } = await existingSessionClient.auth.getUser()
 
-      response.cookies.set('mock_session', 'active', {
-        httpOnly: true,
-        sameSite: 'lax',
-        path: '/',
-        maxAge: 60 * 60 * 24,
-      })
+      if (existingUser?.email && allowMockAuth && loginId === 'admin' && password === '7777') {
+        return NextResponse.json(
+          { error: 'Sign out of the current Supabase session before using local admin login' },
+          { status: 409 },
+        )
+      }
+    }
 
-      response.cookies.set('mock_role', 'admin', {
-        httpOnly: true,
-        sameSite: 'lax',
-        path: '/',
-        maxAge: 60 * 60 * 24,
-      })
-
-      response.cookies.set('mock_email', 'admin@local.alphix', {
-        httpOnly: true,
-        sameSite: 'lax',
-        path: '/',
-        maxAge: 60 * 60 * 24,
-      })
-
-      response.cookies.set('mock_name', 'Local Admin', {
-        httpOnly: true,
-        sameSite: 'lax',
-        path: '/',
-        maxAge: 60 * 60 * 24,
-      })
-
-      return response
+    if (allowMockAuth && loginId === 'admin' && password === '7777') {
+      return createMockLoginResponse('admin@local.alphix', 'admin', 'Local Admin')
     }
 
     if (!email || !emailPattern.test(email)) {
@@ -73,50 +120,69 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'Password must be at least 8 characters' }, { status: 400 })
     }
 
-    ensureExecutionRunning(email)
+    if (!hasPublicSupabaseEnv()) {
+      if (allowMockAuth) {
+        return createMockLoginResponse(email, 'user', 'Mock Trader')
+      }
 
-    const response = NextResponse.json({
+      return NextResponse.json({ error: 'Authentication is unavailable' }, { status: 503 })
+    }
+
+    const response = NextResponse.json({ success: true, data: {} })
+    const supabase = createServerClient(
+      process.env.NEXT_PUBLIC_SUPABASE_URL!,
+      process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
+      {
+        cookies: {
+          getAll() {
+            return request.cookies.getAll()
+          },
+          setAll(cookiesToSet) {
+            cookiesToSet.forEach(({ name, value, options }) => {
+              response.cookies.set(name, value, options)
+            })
+          },
+        },
+      },
+    )
+
+    const { data, error: signInError } = await supabase.auth.signInWithPassword({
+      email,
+      password,
+    })
+
+    if (signInError) {
+      return NextResponse.json({ error: signInError.message }, { status: 401 })
+    }
+
+    if (!data.user?.email) {
+      return NextResponse.json({ error: 'Authenticated user is missing email' }, { status: 500 })
+    }
+
+    clearMockCookies(response)
+    ensureExecutionRunning(data.user.email)
+
+    const finalResponse = NextResponse.json({
       success: true,
       data: {
         user: {
-          id: 'user_mock_001',
-          email,
-          name: 'Mock Trader',
-          role: 'user',
+          id: data.user.id,
+          email: data.user.email,
+          name:
+            typeof data.user.user_metadata?.name === 'string'
+              ? data.user.user_metadata.name
+              : data.user.email,
+          role: getUserRoleFromMetadata(data.user) ?? 'user',
         },
-        accessToken: 'mock_access_token',
+        accessToken: data.session?.access_token ?? null,
       },
     })
 
-    response.cookies.set('mock_session', 'active', {
-      httpOnly: true,
-      sameSite: 'lax',
-      path: '/',
-      maxAge: 60 * 60 * 24,
+    response.cookies.getAll().forEach((cookie) => {
+      finalResponse.cookies.set(cookie)
     })
 
-    response.cookies.set('mock_role', 'user', {
-      httpOnly: true,
-      sameSite: 'lax',
-      path: '/',
-      maxAge: 60 * 60 * 24,
-    })
-
-    response.cookies.set('mock_email', email, {
-      httpOnly: true,
-      sameSite: 'lax',
-      path: '/',
-      maxAge: 60 * 60 * 24,
-    })
-
-    response.cookies.set('mock_name', 'Mock Trader', {
-      httpOnly: true,
-      sameSite: 'lax',
-      path: '/',
-      maxAge: 60 * 60 * 24,
-    })
-
-    return response
+    return finalResponse
   } catch {
     return NextResponse.json({ error: 'Something went wrong' }, { status: 500 })
   }

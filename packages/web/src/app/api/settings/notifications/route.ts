@@ -1,6 +1,7 @@
 import type { User } from '@supabase/supabase-js'
 import { NextRequest, NextResponse } from 'next/server'
 
+import { isLocalAuthHost } from '@/lib/auth/mock-auth'
 import {
   getNotificationWebhookSnapshot,
   NotificationSettingsServiceError,
@@ -137,35 +138,37 @@ function getNotificationPreferencesFromMetadata(user: User): NotificationPrefere
 
 export async function GET(request: NextRequest) {
   try {
-    const isMockSession = request.cookies.get('mock_session')?.value === 'active'
-
-    if (isMockSession) {
-      const emailEnabled =
-        request.cookies.get('mock_notifications_email_enabled')?.value !== 'false'
-      const lossLimitPercent = parseLossLimitPercent(
-        request.cookies.get('mock_notifications_loss_limit_percent')?.value,
-        defaultLossLimitPercent,
-      )
-      const webhookSnapshot = await getNotificationWebhookSnapshot({
-        email: request.cookies.get('mock_email')?.value ?? 'mock.user@alphix.kr',
-        isMockSession: true,
-      })
-
-      return buildResponse(
-        {
-          emailEnabled,
-          lossLimitPercent,
-          slackWebhook: webhookSnapshot.slackWebhook,
-        },
-        {
-          canPatch: true,
-          canSaveWebhook: webhookSnapshot.capabilities.canSaveWebhook,
-          reasons: webhookSnapshot.capabilities.reasons,
-        },
-      )
-    }
+    const host = request.headers.get('x-forwarded-host') ?? request.headers.get('host')
+    const isMockSession =
+      isLocalAuthHost(host) && request.cookies.get('mock_session')?.value === 'active'
 
     if (!hasPublicSupabaseEnv()) {
+      if (isMockSession) {
+        const emailEnabled =
+          request.cookies.get('mock_notifications_email_enabled')?.value !== 'false'
+        const lossLimitPercent = parseLossLimitPercent(
+          request.cookies.get('mock_notifications_loss_limit_percent')?.value,
+          defaultLossLimitPercent,
+        )
+        const webhookSnapshot = await getNotificationWebhookSnapshot({
+          email: request.cookies.get('mock_email')?.value ?? 'mock.user@alphix.kr',
+          isMockSession: true,
+        })
+
+        return buildResponse(
+          {
+            emailEnabled,
+            lossLimitPercent,
+            slackWebhook: webhookSnapshot.slackWebhook,
+          },
+          {
+            canPatch: true,
+            canSaveWebhook: webhookSnapshot.capabilities.canSaveWebhook,
+            reasons: webhookSnapshot.capabilities.reasons,
+          },
+        )
+      }
+
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
     }
 
@@ -175,6 +178,32 @@ export async function GET(request: NextRequest) {
     } = await supabase.auth.getUser()
 
     if (!user?.email) {
+      if (isMockSession) {
+        const emailEnabled =
+          request.cookies.get('mock_notifications_email_enabled')?.value !== 'false'
+        const lossLimitPercent = parseLossLimitPercent(
+          request.cookies.get('mock_notifications_loss_limit_percent')?.value,
+          defaultLossLimitPercent,
+        )
+        const webhookSnapshot = await getNotificationWebhookSnapshot({
+          email: request.cookies.get('mock_email')?.value ?? 'mock.user@alphix.kr',
+          isMockSession: true,
+        })
+
+        return buildResponse(
+          {
+            emailEnabled,
+            lossLimitPercent,
+            slackWebhook: webhookSnapshot.slackWebhook,
+          },
+          {
+            canPatch: true,
+            canSaveWebhook: webhookSnapshot.capabilities.canSaveWebhook,
+            reasons: webhookSnapshot.capabilities.reasons,
+          },
+        )
+      }
+
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
     }
 
@@ -218,56 +247,58 @@ export async function PATCH(request: NextRequest) {
       return NextResponse.json({ error: validationError }, { status: 400 })
     }
 
-    const isMockSession = request.cookies.get('mock_session')?.value === 'active'
+    const host = request.headers.get('x-forwarded-host') ?? request.headers.get('host')
+    const isMockSession =
+      isLocalAuthHost(host) && request.cookies.get('mock_session')?.value === 'active'
 
-    if (isMockSession) {
-      if (slackWebhook) {
-        return NextResponse.json(
-          { error: 'Slack webhook save is unavailable in mock session' },
-          { status: 403 },
+    if (!hasPublicSupabaseEnv()) {
+      if (isMockSession) {
+        if (slackWebhook) {
+          return NextResponse.json(
+            { error: 'Slack webhook save is unavailable in mock session' },
+            { status: 403 },
+          )
+        }
+
+        const webhookSnapshot = await getNotificationWebhookSnapshot({
+          email: request.cookies.get('mock_email')?.value ?? 'mock.user@alphix.kr',
+          isMockSession: true,
+        })
+
+        const response = buildResponse(
+          {
+            emailEnabled,
+            lossLimitPercent,
+            slackWebhook: webhookSnapshot.slackWebhook,
+          },
+          {
+            canPatch: true,
+            canSaveWebhook: webhookSnapshot.capabilities.canSaveWebhook,
+            reasons: webhookSnapshot.capabilities.reasons,
+          },
         )
-      }
 
-      const webhookSnapshot = await getNotificationWebhookSnapshot({
-        email: request.cookies.get('mock_email')?.value ?? 'mock.user@alphix.kr',
-        isMockSession: true,
-      })
-
-      const response = buildResponse(
-        {
-          emailEnabled,
-          lossLimitPercent,
-          slackWebhook: webhookSnapshot.slackWebhook,
-        },
-        {
-          canPatch: true,
-          canSaveWebhook: webhookSnapshot.capabilities.canSaveWebhook,
-          reasons: webhookSnapshot.capabilities.reasons,
-        },
-      )
-
-      response.cookies.set('mock_notifications_email_enabled', String(emailEnabled), {
-        httpOnly: true,
-        sameSite: 'lax',
-        path: '/',
-        maxAge: mockCookieMaxAge,
-      })
-
-      response.cookies.set(
-        'mock_notifications_loss_limit_percent',
-        lossLimitPercent === null ? '' : String(lossLimitPercent),
-        {
+        response.cookies.set('mock_notifications_email_enabled', String(emailEnabled), {
           httpOnly: true,
           sameSite: 'lax',
           path: '/',
           maxAge: mockCookieMaxAge,
-        },
-      )
+        })
 
-      return response
-    }
+        response.cookies.set(
+          'mock_notifications_loss_limit_percent',
+          lossLimitPercent === null ? '' : String(lossLimitPercent),
+          {
+            httpOnly: true,
+            sameSite: 'lax',
+            path: '/',
+            maxAge: mockCookieMaxAge,
+          },
+        )
 
-    if (!hasPublicSupabaseEnv()) {
+        return response
+      }
+
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
     }
 
@@ -277,6 +308,53 @@ export async function PATCH(request: NextRequest) {
     } = await supabase.auth.getUser()
 
     if (!user?.email) {
+      if (isMockSession) {
+        if (slackWebhook) {
+          return NextResponse.json(
+            { error: 'Slack webhook save is unavailable in mock session' },
+            { status: 403 },
+          )
+        }
+
+        const webhookSnapshot = await getNotificationWebhookSnapshot({
+          email: request.cookies.get('mock_email')?.value ?? 'mock.user@alphix.kr',
+          isMockSession: true,
+        })
+
+        const response = buildResponse(
+          {
+            emailEnabled,
+            lossLimitPercent,
+            slackWebhook: webhookSnapshot.slackWebhook,
+          },
+          {
+            canPatch: true,
+            canSaveWebhook: webhookSnapshot.capabilities.canSaveWebhook,
+            reasons: webhookSnapshot.capabilities.reasons,
+          },
+        )
+
+        response.cookies.set('mock_notifications_email_enabled', String(emailEnabled), {
+          httpOnly: true,
+          sameSite: 'lax',
+          path: '/',
+          maxAge: mockCookieMaxAge,
+        })
+
+        response.cookies.set(
+          'mock_notifications_loss_limit_percent',
+          lossLimitPercent === null ? '' : String(lossLimitPercent),
+          {
+            httpOnly: true,
+            sameSite: 'lax',
+            path: '/',
+            maxAge: mockCookieMaxAge,
+          },
+        )
+
+        return response
+      }
+
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
     }
 

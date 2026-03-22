@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 
+import { isLocalAuthHost } from '@/lib/auth/mock-auth'
 import {
   BrokerSettingsServiceError,
   getBrokerSettingsSnapshot,
@@ -23,18 +24,20 @@ function readTrimmedString(value: unknown) {
 async function resolveAuthenticatedIdentity(
   request: NextRequest,
 ): Promise<AuthenticatedIdentity | NextResponse> {
-  const isMockSession = request.cookies.get('mock_session')?.value === 'active'
-
-  if (isMockSession) {
-    return {
-      email:
-        readTrimmedString(request.cookies.get('mock_email')?.value).toLowerCase() ||
-        'mock.user@alphix.kr',
-      isMockSession: true,
-    }
-  }
+  const host = request.headers.get('x-forwarded-host') ?? request.headers.get('host')
+  const isMockSession =
+    isLocalAuthHost(host) && request.cookies.get('mock_session')?.value === 'active'
 
   if (!hasPublicSupabaseEnv()) {
+    if (isMockSession) {
+      return {
+        email:
+          readTrimmedString(request.cookies.get('mock_email')?.value).toLowerCase() ||
+          'mock.user@alphix.kr',
+        isMockSession: true,
+      }
+    }
+
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
   }
 
@@ -44,6 +47,15 @@ async function resolveAuthenticatedIdentity(
   } = await supabase.auth.getUser()
 
   if (!user?.email) {
+    if (isMockSession) {
+      return {
+        email:
+          readTrimmedString(request.cookies.get('mock_email')?.value).toLowerCase() ||
+          'mock.user@alphix.kr',
+        isMockSession: true,
+      }
+    }
+
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
   }
 

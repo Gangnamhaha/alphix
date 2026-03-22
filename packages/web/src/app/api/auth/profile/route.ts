@@ -2,6 +2,7 @@ import type { User } from '@supabase/supabase-js'
 import { NextRequest, NextResponse } from 'next/server'
 
 import { getUserRoleFromMetadata } from '@/lib/auth/roles'
+import { isLocalAuthHost } from '@/lib/auth/mock-auth'
 import { createAdminSupabaseClient } from '@/lib/supabase/admin'
 import { createServerSupabaseClient } from '@/lib/supabase/server'
 
@@ -101,23 +102,25 @@ function buildProfileResponse(user: ProfileUser) {
 
 export async function GET(request: NextRequest) {
   try {
-    const isMockSession = request.cookies.get('mock_session')?.value === 'active'
-
-    if (isMockSession) {
-      const email =
-        readTrimmedString(request.cookies.get('mock_email')?.value).toLowerCase() ||
-        'mock.user@alphix.kr'
-      const role = request.cookies.get('mock_role')?.value
-      const savedName = readTrimmedString(request.cookies.get('mock_name')?.value)
-
-      return buildProfileResponse({
-        email,
-        name: savedName || getDefaultMockName(role),
-        isMockSession: true,
-      })
-    }
+    const host = request.headers.get('x-forwarded-host') ?? request.headers.get('host')
+    const isMockSession =
+      isLocalAuthHost(host) && request.cookies.get('mock_session')?.value === 'active'
 
     if (!hasPublicSupabaseEnv()) {
+      if (isMockSession) {
+        const email =
+          readTrimmedString(request.cookies.get('mock_email')?.value).toLowerCase() ||
+          'mock.user@alphix.kr'
+        const role = request.cookies.get('mock_role')?.value
+        const savedName = readTrimmedString(request.cookies.get('mock_name')?.value)
+
+        return buildProfileResponse({
+          email,
+          name: savedName || getDefaultMockName(role),
+          isMockSession: true,
+        })
+      }
+
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
     }
 
@@ -127,6 +130,20 @@ export async function GET(request: NextRequest) {
     } = await supabase.auth.getUser()
 
     if (!user?.email) {
+      if (isMockSession) {
+        const email =
+          readTrimmedString(request.cookies.get('mock_email')?.value).toLowerCase() ||
+          'mock.user@alphix.kr'
+        const role = request.cookies.get('mock_role')?.value
+        const savedName = readTrimmedString(request.cookies.get('mock_name')?.value)
+
+        return buildProfileResponse({
+          email,
+          name: savedName || getDefaultMockName(role),
+          isMockSession: true,
+        })
+      }
+
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
     }
 
@@ -165,29 +182,31 @@ export async function PATCH(request: NextRequest) {
       )
     }
 
-    const isMockSession = request.cookies.get('mock_session')?.value === 'active'
-
-    if (isMockSession) {
-      const email =
-        readTrimmedString(request.cookies.get('mock_email')?.value).toLowerCase() ||
-        'mock.user@alphix.kr'
-      const response = buildProfileResponse({
-        email,
-        name,
-        isMockSession: true,
-      })
-
-      response.cookies.set('mock_name', name, {
-        httpOnly: true,
-        sameSite: 'lax',
-        path: '/',
-        maxAge: mockCookieMaxAge,
-      })
-
-      return response
-    }
+    const host = request.headers.get('x-forwarded-host') ?? request.headers.get('host')
+    const isMockSession =
+      isLocalAuthHost(host) && request.cookies.get('mock_session')?.value === 'active'
 
     if (!hasPublicSupabaseEnv()) {
+      if (isMockSession) {
+        const email =
+          readTrimmedString(request.cookies.get('mock_email')?.value).toLowerCase() ||
+          'mock.user@alphix.kr'
+        const response = buildProfileResponse({
+          email,
+          name,
+          isMockSession: true,
+        })
+
+        response.cookies.set('mock_name', name, {
+          httpOnly: true,
+          sameSite: 'lax',
+          path: '/',
+          maxAge: mockCookieMaxAge,
+        })
+
+        return response
+      }
+
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
     }
 
@@ -197,6 +216,26 @@ export async function PATCH(request: NextRequest) {
     } = await supabase.auth.getUser()
 
     if (!user?.email) {
+      if (isMockSession) {
+        const email =
+          readTrimmedString(request.cookies.get('mock_email')?.value).toLowerCase() ||
+          'mock.user@alphix.kr'
+        const response = buildProfileResponse({
+          email,
+          name,
+          isMockSession: true,
+        })
+
+        response.cookies.set('mock_name', name, {
+          httpOnly: true,
+          sameSite: 'lax',
+          path: '/',
+          maxAge: mockCookieMaxAge,
+        })
+
+        return response
+      }
+
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
     }
 
