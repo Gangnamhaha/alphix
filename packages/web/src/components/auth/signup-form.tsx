@@ -9,6 +9,10 @@ import { createClient } from '@/lib/supabase/client'
 
 type FormSubmitEvent = Parameters<NonNullable<React.ComponentProps<'form'>['onSubmit']>>[0]
 
+function hasPublicSupabaseEnv() {
+  return Boolean(process.env.NEXT_PUBLIC_SUPABASE_URL && process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY)
+}
+
 export function SignupForm() {
   const router = useRouter()
   const [name, setName] = useState('')
@@ -18,29 +22,6 @@ export function SignupForm() {
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [success, setSuccess] = useState<string | null>(null)
-
-  const isLocalDevHost =
-    typeof window !== 'undefined' &&
-    (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1')
-
-  const signupWithMockApi = async () => {
-    const response = await fetch('/api/auth/signup', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        email: email.trim(),
-        password,
-        name: name.trim(),
-      }),
-    })
-
-    if (!response.ok) {
-      return false
-    }
-
-    proceedAfterSignup(false, false)
-    return true
-  }
 
   const proceedAfterSignup = (hasSession: boolean, profileSyncDeferred: boolean) => {
     if (hasSession) {
@@ -68,6 +49,11 @@ export function SignupForm() {
       return
     }
 
+    if (!hasPublicSupabaseEnv()) {
+      setError('현재 환경에서는 회원가입을 지원하지 않습니다.')
+      return
+    }
+
     setLoading(true)
 
     try {
@@ -83,14 +69,6 @@ export function SignupForm() {
       })
 
       if (signUpError) {
-        if (isLocalDevHost) {
-          const mockSuccess = await signupWithMockApi()
-
-          if (mockSuccess) {
-            return
-          }
-        }
-
         setError(signUpError.message)
         return
       }
@@ -119,14 +97,6 @@ export function SignupForm() {
 
       proceedAfterSignup(Boolean(data.session), false)
     } catch {
-      if (isLocalDevHost) {
-        const mockSuccess = await signupWithMockApi()
-
-        if (mockSuccess) {
-          return
-        }
-      }
-
       setError('회원가입 중 문제가 발생했습니다. 잠시 후 다시 시도해 주세요.')
     } finally {
       setLoading(false)
