@@ -37,13 +37,10 @@ jobs:
         run: bun run build
 
       - name: Pull Vercel environment
-        working-directory: packages/web
         run: bunx vercel pull --yes --environment=production --token "$VERCEL_TOKEN"
 
       - name: Build Vercel artifact
-        working-directory: packages/web
         run: bunx vercel build --prod --token "$VERCEL_TOKEN"
 
       - name: Deploy to Vercel Production
-        working-directory: packages/web
         run: bunx vercel deploy --prebuilt --prod --token "$VERCEL_TOKEN"
