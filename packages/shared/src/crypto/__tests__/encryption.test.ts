@@ -1,5 +1,12 @@
 import { describe, expect, test } from 'bun:test'
-import { encrypt, decrypt } from '../encryption'
+import {
+  decrypt,
+  decryptFromString,
+  deserializeEncryptedData,
+  encrypt,
+  encryptToString,
+  serializeEncryptedData,
+} from '../encryption'
 
 const KEY = 'a]b$c&d*e(f)g#h!i@j^k%l+m=n~o.p!'
 
@@ -19,5 +26,27 @@ describe('encryption', () => {
 
   test('invalid key length throws', () => {
     expect(() => encrypt('test', 'short')).toThrow('Encryption key must be 32 bytes')
+  })
+
+  test('serialize and deserialize encrypted payload', () => {
+    const encrypted = encrypt('serialized-secret', KEY)
+    const serialized = serializeEncryptedData(encrypted)
+    const deserialized = deserializeEncryptedData(serialized)
+    const decrypted = decrypt(deserialized, KEY)
+
+    expect(decrypted).toBe('serialized-secret')
+  })
+
+  test('encrypt and decrypt with string helpers', () => {
+    const serialized = encryptToString('string-secret', KEY)
+    const decrypted = decryptFromString(serialized, KEY)
+    expect(decrypted).toBe('string-secret')
+  })
+
+  test('deserialize invalid encrypted payload throws', () => {
+    expect(() => deserializeEncryptedData('not-json')).toThrow('Invalid encrypted data payload')
+    expect(() => deserializeEncryptedData('{"ciphertext": "a"}')).toThrow(
+      'Invalid encrypted data payload',
+    )
   })
 })
