@@ -2,11 +2,12 @@ import { NextRequest, NextResponse } from 'next/server'
 
 export async function GET(request: NextRequest) {
   try {
-    const session = request.cookies.get('mock_session')
+    const session = request.cookies.get('mock_session')?.value
     const role = request.cookies.get('mock_role')?.value
     const email = request.cookies.get('mock_email')?.value
+    const name = request.cookies.get('mock_name')?.value
 
-    if (!session) {
+    if (session !== 'active') {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
     }
 
@@ -16,7 +17,7 @@ export async function GET(request: NextRequest) {
         user: {
           id: 'user_mock_001',
           email: email ?? 'mock.user@alphix.kr',
-          name: 'Mock Trader',
+          name: name ?? 'Mock Trader',
           role: role === 'admin' ? 'admin' : 'user',
         },
       },

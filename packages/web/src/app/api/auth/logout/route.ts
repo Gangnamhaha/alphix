@@ -35,6 +35,13 @@ export async function POST(request: NextRequest) {
       maxAge: 0,
     })
 
+    response.cookies.set('mock_name', '', {
+      httpOnly: true,
+      sameSite: 'lax',
+      path: '/',
+      maxAge: 0,
+    })
+
     return response
   } catch {
     return NextResponse.json({ error: 'Something went wrong' }, { status: 500 })

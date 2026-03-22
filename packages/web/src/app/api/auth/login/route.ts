@@ -55,6 +55,13 @@ export async function POST(request: NextRequest) {
         maxAge: 60 * 60 * 24,
       })
 
+      response.cookies.set('mock_name', 'Local Admin', {
+        httpOnly: true,
+        sameSite: 'lax',
+        path: '/',
+        maxAge: 60 * 60 * 24,
+      })
+
       return response
     }
 
@@ -96,6 +103,13 @@ export async function POST(request: NextRequest) {
     })
 
     response.cookies.set('mock_email', email, {
+      httpOnly: true,
+      sameSite: 'lax',
+      path: '/',
+      maxAge: 60 * 60 * 24,
+    })
+
+    response.cookies.set('mock_name', 'Mock Trader', {
       httpOnly: true,
       sameSite: 'lax',
       path: '/',
