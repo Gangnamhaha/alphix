@@ -1,10 +1,11 @@
 import { NextRequest, NextResponse } from 'next/server'
 
+import { resolveMonitoringUserKey } from '@/lib/runtime/monitoring-auth'
 import { ensureExecutionRunning, getExecutionState } from '@/lib/runtime/execution-session'
 
 export async function GET(request: NextRequest) {
   try {
-    const userKey = request.cookies.get('mock_email')?.value?.trim().toLowerCase()
+    const userKey = await resolveMonitoringUserKey(request)
     const execution = userKey
       ? (getExecutionState(userKey) ?? ensureExecutionRunning(userKey))
       : null

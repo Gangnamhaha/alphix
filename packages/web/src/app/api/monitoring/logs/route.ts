@@ -1,26 +1,17 @@
 import { NextRequest, NextResponse } from 'next/server'
 
+import { getExecutionLogs } from '@/lib/runtime/execution-session'
+import { resolveMonitoringUserKey } from '@/lib/runtime/monitoring-auth'
+
 export async function GET(_request: NextRequest) {
   try {
+    const userKey = await resolveMonitoringUserKey(_request)
+    const logs = userKey ? getExecutionLogs(userKey) : []
+
     return NextResponse.json({
       success: true,
       data: {
-        logs: [
-          {
-            id: 'log_001',
-            level: 'info',
-            event: 'ORDER_SUBMITTED',
-            message: '005930 buy order submitted',
-            timestamp: new Date(Date.now() - 1000 * 60 * 3).toISOString(),
-          },
-          {
-            id: 'log_002',
-            level: 'warn',
-            event: 'SLIPPAGE_ALERT',
-            message: 'Execution price deviated by 0.8%',
-            timestamp: new Date(Date.now() - 1000 * 60).toISOString(),
-          },
-        ],
+        logs,
       },
     })
   } catch {
