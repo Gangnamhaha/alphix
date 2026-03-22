@@ -50,12 +50,24 @@ interface BrokerSettingsSnapshot {
   capabilities: BrokerSettingsCapabilities
 }
 
-type NotificationCapabilityReason = 'MOCK_SESSION_LOCAL_ONLY' | 'WEBHOOK_STORAGE_UNAVAILABLE'
+type NotificationCapabilityReason =
+  | 'MOCK_SESSION_LOCAL_ONLY'
+  | 'ADMIN_ENV_UNAVAILABLE'
+  | 'ADMIN_CLIENT_UNAVAILABLE'
+  | 'ENCRYPTION_KEY_UNAVAILABLE'
+  | 'USER_ROW_NOT_FOUND'
+  | 'MULTIPLE_USER_ROWS'
+  | 'MULTIPLE_NOTIFICATION_SETTINGS'
+
+interface NotificationSecretState {
+  isSet: boolean
+  maskedValue: string | null
+}
 
 interface NotificationSettingsView {
   emailEnabled: boolean
   lossLimitPercent: number | null
-  slackWebhookConfigured: boolean
+  slackWebhook: NotificationSecretState
 }
 
 interface NotificationSettingsCapabilities {
@@ -273,7 +285,6 @@ function readNotificationSettings(payload: unknown): NotificationSettingsSnapsho
 
   if (
     typeof payload.data.settings.emailEnabled !== 'boolean' ||
-    typeof payload.data.settings.slackWebhookConfigured !== 'boolean' ||
     typeof payload.data.capabilities.canPatch !== 'boolean' ||
     typeof payload.data.capabilities.canSaveWebhook !== 'boolean'
   ) {
@@ -288,17 +299,37 @@ function readNotificationSettings(payload: unknown): NotificationSettingsSnapsho
 
   const lossLimitPercent = readNumberOrNull(payload.data.settings.lossLimitPercent)
 
+  if (
+    !isRecord(payload.data.settings.slackWebhook) ||
+    typeof payload.data.settings.slackWebhook.isSet !== 'boolean' ||
+    (payload.data.settings.slackWebhook.maskedValue !== null &&
+      typeof payload.data.settings.slackWebhook.maskedValue !== 'string')
+  ) {
+    return null
+  }
+
   return {
     settings: {
       emailEnabled: payload.data.settings.emailEnabled,
       lossLimitPercent,
-      slackWebhookConfigured: payload.data.settings.slackWebhookConfigured,
+      slackWebhook: {
+        isSet: payload.data.settings.slackWebhook.isSet,
+        maskedValue: payload.data.settings.slackWebhook.maskedValue,
+      },
     },
     capabilities: {
       canPatch: payload.data.capabilities.canPatch,
       canSaveWebhook: payload.data.capabilities.canSaveWebhook,
       reasons: reasons.filter((reason): reason is NotificationCapabilityReason => {
-        return ['MOCK_SESSION_LOCAL_ONLY', 'WEBHOOK_STORAGE_UNAVAILABLE'].includes(reason)
+        return [
+          'MOCK_SESSION_LOCAL_ONLY',
+          'ADMIN_ENV_UNAVAILABLE',
+          'ADMIN_CLIENT_UNAVAILABLE',
+          'ENCRYPTION_KEY_UNAVAILABLE',
+          'USER_ROW_NOT_FOUND',
+          'MULTIPLE_USER_ROWS',
+          'MULTIPLE_NOTIFICATION_SETTINGS',
+        ].includes(reason)
       }),
     },
   }
@@ -333,13 +364,27 @@ function formatNotificationCapabilityReason(reason: NotificationCapabilityReason
   switch (reason) {
     case 'MOCK_SESSION_LOCAL_ONLY':
       return '로컬 mock 세션에서는 알림 선호도가 현재 브라우저 세션에만 저장됩니다.'
-    case 'WEBHOOK_STORAGE_UNAVAILABLE':
-      return 'Slack Webhook 같은 비밀 연동값은 아직 안전한 저장소가 없어 이 화면에서 저장하지 않습니다.'
+    case 'ADMIN_ENV_UNAVAILABLE':
+      return '서버 관리자 환경이 없어 Slack Webhook 저장소를 사용할 수 없습니다.'
+    case 'ADMIN_CLIENT_UNAVAILABLE':
+      return 'Slack Webhook 저장소 연결에 실패했습니다. 잠시 후 다시 시도해 주세요.'
+    case 'ENCRYPTION_KEY_UNAVAILABLE':
+      return 'ENCRYPTION_KEY가 없어 Slack Webhook 암호화 저장이 비활성화되어 있습니다.'
+    case 'USER_ROW_NOT_FOUND':
+      return '이 계정에 연결된 사용자 레코드를 찾지 못해 Slack Webhook을 저장할 수 없습니다.'
+    case 'MULTIPLE_USER_ROWS':
+      return '같은 이메일에 연결된 사용자 레코드가 여러 개라 Slack Webhook을 안전하게 저장할 수 없습니다.'
+    case 'MULTIPLE_NOTIFICATION_SETTINGS':
+      return '이 계정에 알림 비밀 설정이 여러 개 있어 Slack Webhook을 수정할 수 없습니다.'
   }
 }
 
 function formatLossLimitPercent(value: number | null) {
   return value === null ? '' : String(value)
+}
+
+function formatNotificationSecretState(state: NotificationSecretState) {
+  return state.isSet ? (state.maskedValue ?? '********') : '미저장'
 }
 
 export default function SettingsPage() {
@@ -373,6 +418,7 @@ export default function SettingsPage() {
   const [savedEmailNotificationsEnabled, setSavedEmailNotificationsEnabled] = useState(true)
   const [lossLimitPercentInput, setLossLimitPercentInput] = useState('')
   const [savedLossLimitPercentInput, setSavedLossLimitPercentInput] = useState('')
+  const [slackWebhookInput, setSlackWebhookInput] = useState('')
   const [isLoadingNotifications, setIsLoadingNotifications] = useState(true)
   const [isSavingNotifications, setIsSavingNotifications] = useState(false)
   const [notificationError, setNotificationError] = useState<string | null>(null)
@@ -555,7 +601,8 @@ export default function SettingsPage() {
     : Boolean(selectedBrokerType) || hasBrokerSecretInputs
   const hasNotificationChanges =
     emailNotificationsEnabled !== savedEmailNotificationsEnabled ||
-    lossLimitPercentInput.trim() !== savedLossLimitPercentInput.trim()
+    lossLimitPercentInput.trim() !== savedLossLimitPercentInput.trim() ||
+    slackWebhookInput.trim() !== ''
 
   async function handleProfileSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault()
@@ -667,6 +714,7 @@ export default function SettingsPage() {
       const payload = {
         emailEnabled: emailNotificationsEnabled,
         lossLimitPercent: normalizedLossLimit ? Number(normalizedLossLimit) : null,
+        slackWebhook: slackWebhookInput.trim() || undefined,
       }
 
       const response = await fetch('/api/settings/notifications', {
@@ -696,6 +744,7 @@ export default function SettingsPage() {
       setSavedEmailNotificationsEnabled(snapshot.settings.emailEnabled)
       setLossLimitPercentInput(nextLossLimit)
       setSavedLossLimitPercentInput(nextLossLimit)
+      setSlackWebhookInput('')
       setNotificationMessage('알림 설정이 저장되었습니다.')
     } catch (error) {
       setNotificationError(
@@ -926,8 +975,8 @@ export default function SettingsPage() {
         <div className="space-y-1">
           <h2 className="text-lg font-semibold">알림 설정</h2>
           <p className="text-sm text-muted-foreground">
-            비밀값이 필요 없는 알림 선호도는 지금 저장할 수 있고, Webhook 연동은 안전한 저장소를
-            준비한 뒤 이어집니다.
+            이메일 알림과 손실 한도는 지금 저장할 수 있고, Slack Webhook은 암호화된 상태로만
+            보관됩니다.
           </p>
         </div>
 
@@ -991,8 +1040,18 @@ export default function SettingsPage() {
             <Input
               id="settings-slack-webhook"
               type="password"
-              placeholder="안전한 비밀값 저장소 준비 후 지원 예정"
-              disabled
+              placeholder={
+                notificationCapabilities?.canSaveWebhook
+                  ? 'https://hooks.slack.com/services/...'
+                  : 'Slack Webhook 저장이 현재 비활성화되어 있습니다'
+              }
+              value={slackWebhookInput}
+              onChange={(event) => setSlackWebhookInput(event.target.value)}
+              disabled={
+                isLoadingNotifications ||
+                isSavingNotifications ||
+                !notificationCapabilities?.canSaveWebhook
+              }
             />
           </div>
 
@@ -1006,7 +1065,9 @@ export default function SettingsPage() {
             </p>
             <p>
               Slack Webhook 저장 상태:{' '}
-              {notificationSettings?.slackWebhookConfigured ? '설정됨' : '미지원'}
+              {notificationSettings
+                ? formatNotificationSecretState(notificationSettings.slackWebhook)
+                : '미저장'}
             </p>
           </div>
 
