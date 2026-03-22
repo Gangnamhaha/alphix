@@ -4,7 +4,7 @@ import { useState } from 'react'
 import { useRouter } from 'next/navigation'
 
 import { Button } from '@/components/ui/button'
-import { createClient } from '@/lib/supabase/client'
+import { createClient, hasPublicSupabaseEnv } from '@/lib/supabase/client'
 
 interface LogoutButtonProps {
   userKey?: string
@@ -20,19 +20,16 @@ export function LogoutButton({ userKey }: LogoutButtonProps) {
     setError(null)
 
     try {
-      const supabase = createClient()
-      const { error: signOutError } = await supabase.auth.signOut()
-
-      if (signOutError) {
-        setError(signOutError.message)
-        return
-      }
-
       const response = await fetch('/api/auth/logout', { method: 'POST' })
 
       if (!response.ok) {
         setError('서버 로그아웃에 실패했습니다. 다시 시도해 주세요.')
         return
+      }
+
+      if (hasPublicSupabaseEnv()) {
+        const supabase = createClient()
+        await supabase.auth.signOut()
       }
 
       if (userKey) {
