@@ -4,10 +4,14 @@ import { useState } from 'react'
 import { useRouter } from 'next/navigation'
 
 import { Button } from '@/components/ui/button'
-import { createClient, hasPublicSupabaseEnv } from '@/lib/supabase/client'
+import { createClient } from '@/lib/supabase/client'
 
 interface LogoutButtonProps {
   userKey?: string
+}
+
+function hasPublicSupabaseEnv() {
+  return Boolean(process.env.NEXT_PUBLIC_SUPABASE_URL && process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY)
 }
 
 export function LogoutButton({ userKey }: LogoutButtonProps) {
