@@ -34,12 +34,56 @@ function restoreFlagKeyFor(userKey: string) {
   return `alphix.activity.restored.${userKey}`
 }
 
+function safeLocalStorageGet(key: string) {
+  if (typeof window === 'undefined') {
+    return null
+  }
+
+  try {
+    return window.localStorage.getItem(key)
+  } catch {
+    return null
+  }
+}
+
+function safeLocalStorageSet(key: string, value: string) {
+  if (typeof window === 'undefined') {
+    return
+  }
+
+  try {
+    window.localStorage.setItem(key, value)
+  } catch {}
+}
+
+function safeSessionStorageGet(key: string) {
+  if (typeof window === 'undefined') {
+    return null
+  }
+
+  try {
+    return window.sessionStorage.getItem(key)
+  } catch {
+    return null
+  }
+}
+
+function safeSessionStorageSet(key: string, value: string) {
+  if (typeof window === 'undefined') {
+    return
+  }
+
+  try {
+    window.sessionStorage.setItem(key, value)
+  } catch {}
+}
+
 function readSnapshot(userKey: string): ActivitySnapshot {
   if (typeof window === 'undefined') {
     return { logs: [], lastPath: '/dashboard', drafts: {}, updatedAt: new Date().toISOString() }
   }
 
-  const raw = window.localStorage.getItem(storageKeyFor(userKey))
+  const raw = safeLocalStorageGet(storageKeyFor(userKey))
   if (!raw) {
     return { logs: [], lastPath: '/dashboard', drafts: {}, updatedAt: new Date().toISOString() }
   }
@@ -62,7 +106,7 @@ function writeSnapshot(userKey: string, snapshot: ActivitySnapshot) {
     return
   }
 
-  window.localStorage.setItem(storageKeyFor(userKey), JSON.stringify(snapshot))
+  safeLocalStorageSet(storageKeyFor(userKey), JSON.stringify(snapshot))
 }
 
 function pushLog(userKey: string, item: ActivityLogItem) {
@@ -145,17 +189,17 @@ export function ActivityTracker({ userKey, isAdmin }: ActivityTrackerProps) {
       at: new Date().toISOString(),
     })
 
-    const restoreFlag = window.sessionStorage.getItem(restoreFlagKeyFor(userKey))
+    const restoreFlag = safeSessionStorageGet(restoreFlagKeyFor(userKey))
     const snapshot = readSnapshot(userKey)
     const shouldRestore = !restoreFlag
 
     if (shouldRestore && snapshot.lastPath && snapshot.lastPath !== pathname) {
       const adminPath = snapshot.lastPath.startsWith('/admin')
       if (!adminPath || isAdmin) {
-        window.sessionStorage.setItem(restoreFlagKeyFor(userKey), '1')
+        safeSessionStorageSet(restoreFlagKeyFor(userKey), '1')
         router.replace(snapshot.lastPath)
       } else {
-        window.sessionStorage.setItem(restoreFlagKeyFor(userKey), '1')
+        safeSessionStorageSet(restoreFlagKeyFor(userKey), '1')
       }
     }
 
