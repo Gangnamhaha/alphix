@@ -32,12 +32,12 @@ export default async function AdminSubscriptionsPage() {
     ...new Set(
       (subscriptions ?? [])
         .map((subscription) => subscription.user_id)
-        .filter((id) => typeof id === 'number'),
+        .filter((id): id is string => typeof id === 'string' && id.length > 0),
     ),
   ]
   const { data: users } = userIds.length
     ? await supabase.from('users').select('id, email').in('id', userIds)
-    : { data: [] as Array<{ id: number; email: string }> }
+    : { data: [] as Array<{ id: string; email: string }> }
 
   const emailByUserId = new Map((users ?? []).map((user) => [user.id, user.email]))
 
@@ -73,7 +73,7 @@ export default async function AdminSubscriptionsPage() {
                     <TableRow key={subscription.id}>
                       <TableCell>{subscription.id}</TableCell>
                       <TableCell>
-                        {typeof subscription.user_id === 'number'
+                        {typeof subscription.user_id === 'string'
                           ? (emailByUserId.get(subscription.user_id) ?? '-')
                           : '-'}
                       </TableCell>
