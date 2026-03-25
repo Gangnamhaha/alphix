@@ -70,6 +70,15 @@ interface ResolvedBrokerConfig {
   reason: BrokerCapabilityReason | null
 }
 
+export interface BrokerRuntimeConfig {
+  id: number
+  userId: number
+  brokerType: BrokerType
+  isActive: boolean
+  encryptedApiKey: string | null
+  encryptedSecret: string | null
+}
+
 export class BrokerSettingsServiceError extends Error {
   status: number
 
@@ -167,6 +176,19 @@ function requireEncryptionKeyForSecretSave(field: string) {
   return key
 }
 
+export function requireBrokerRuntimeEncryptionKey() {
+  const key = process.env.ENCRYPTION_KEY
+
+  if (!key || key.length !== 32) {
+    throw new BrokerSettingsServiceError(
+      503,
+      'Broker reads are unavailable: ENCRYPTION_KEY must be 32 bytes',
+    )
+  }
+
+  return key
+}
+
 async function resolveUserIdByEmail(email: string): Promise<ResolvedUser> {
   const supabase = createAdminSupabaseClient()
   const { data, error } = await supabase.from('users').select('id').eq('email', email)
@@ -216,6 +238,73 @@ async function resolveBrokerConfigByUserId(userId: number): Promise<ResolvedBrok
   return {
     row: data[0] ?? null,
     reason: null,
+  }
+}
+
+export async function getBrokerRuntimeConfig(
+  identity: BrokerSettingsIdentity,
+): Promise<BrokerRuntimeConfig> {
+  if (identity.isMockSession) {
+    throw new BrokerSettingsServiceError(403, 'Broker reads are unavailable in mock session')
+  }
+
+  if (!hasAdminSupabaseEnv()) {
+    throw new BrokerSettingsServiceError(
+      503,
+      'Broker reads are unavailable: missing admin Supabase environment',
+    )
+  }
+
+  const userResolution = await resolveUserIdByEmail(identity.email)
+
+  if (userResolution.reason === 'USER_ROW_NOT_FOUND') {
+    throw new BrokerSettingsServiceError(
+      409,
+      'Broker reads are unavailable: no users row found for this account',
+    )
+  }
+
+  if (userResolution.reason === 'MULTIPLE_USER_ROWS') {
+    throw new BrokerSettingsServiceError(
+      409,
+      'Broker reads are unavailable: multiple users rows match this account',
+    )
+  }
+
+  if (userResolution.userId === null) {
+    throw new BrokerSettingsServiceError(409, 'Broker reads are unavailable for this account')
+  }
+
+  const configResolution = await resolveBrokerConfigByUserId(userResolution.userId)
+
+  if (configResolution.reason === 'MULTIPLE_BROKER_CONFIGS') {
+    throw new BrokerSettingsServiceError(
+      409,
+      'Broker reads are unavailable: multiple broker configs exist for this user',
+    )
+  }
+
+  if (!configResolution.row) {
+    throw new BrokerSettingsServiceError(
+      409,
+      'Broker reads are unavailable: no broker config found for this account',
+    )
+  }
+
+  if (!isSupportedBroker(configResolution.row.broker_type)) {
+    throw new BrokerSettingsServiceError(
+      409,
+      'Broker reads are unavailable: stored broker type is unsupported',
+    )
+  }
+
+  return {
+    id: configResolution.row.id,
+    userId: userResolution.userId,
+    brokerType: configResolution.row.broker_type,
+    isActive: Boolean(configResolution.row.is_active),
+    encryptedApiKey: configResolution.row.encrypted_api_key,
+    encryptedSecret: configResolution.row.encrypted_secret,
   }
 }
 

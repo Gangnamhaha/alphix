@@ -11,7 +11,8 @@
       }
     ],
     "paths": {
-      "@/*": ["./src/*"]
+      "@/*": ["./src/*"],
+      "@alphix/trading-engine": ["../trading-engine/src/index.ts"]
     },
     "allowJs": true,
     "incremental": true
