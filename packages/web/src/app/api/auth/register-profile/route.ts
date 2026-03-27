@@ -9,6 +9,8 @@ interface RegisterProfileBody {
 
 const emailPattern = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
 
+const SUPABASE_AUTH_SENTINEL = '$supabase_auth$'
+
 export async function POST(request: NextRequest) {
   try {
     const body = (await request.json()) as RegisterProfileBody
@@ -33,22 +35,37 @@ export async function POST(request: NextRequest) {
       )
     }
 
-    const { error } = await supabase.from('users').upsert(
-      {
-        email,
-        name,
-      },
-      { onConflict: 'email' },
-    )
+    const { error: insertError } = await supabase.from('users').insert({
+      id: crypto.randomUUID(),
+      email,
+      name,
+      password_hash: SUPABASE_AUTH_SENTINEL,
+    })
 
-    if (error) {
-      return NextResponse.json(
-        { error: error.message, code: 'PROFILE_SYNC_FAILED' },
-        { status: 500 },
-      )
+    if (!insertError) {
+      return NextResponse.json({ success: true })
     }
 
-    return NextResponse.json({ success: true })
+    if (insertError.code === '23505') {
+      const { error: updateError } = await supabase
+        .from('users')
+        .update({ name })
+        .eq('email', email)
+
+      if (updateError) {
+        return NextResponse.json(
+          { error: updateError.message, code: 'PROFILE_SYNC_FAILED' },
+          { status: 500 },
+        )
+      }
+
+      return NextResponse.json({ success: true })
+    }
+
+    return NextResponse.json(
+      { error: insertError.message, code: 'PROFILE_SYNC_FAILED' },
+      { status: 500 },
+    )
   } catch {
     return NextResponse.json(
       { error: 'Something went wrong', code: 'PROFILE_SYNC_UNKNOWN' },
