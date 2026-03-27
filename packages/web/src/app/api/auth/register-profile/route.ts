@@ -37,7 +37,6 @@ export async function POST(request: NextRequest) {
       {
         email,
         name,
-        role: 'user',
       },
       { onConflict: 'email' },
     )
