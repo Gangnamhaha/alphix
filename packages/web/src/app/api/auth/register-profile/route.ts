@@ -1,3 +1,5 @@
+import { randomUUID } from 'crypto'
+
 import { NextRequest, NextResponse } from 'next/server'
 
 import { createAdminSupabaseClient } from '@/lib/supabase/admin'
@@ -36,7 +38,7 @@ export async function POST(request: NextRequest) {
     }
 
     const { error: insertError } = await supabase.from('users').insert({
-      id: crypto.randomUUID(),
+      id: randomUUID(),
       email,
       name,
       password_hash: SUPABASE_AUTH_SENTINEL,
