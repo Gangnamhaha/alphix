@@ -20,7 +20,7 @@ export class BrokerReadServiceError extends Error {
   }
 }
 
-type BrokerReadKind = 'positions' | 'balance'
+type BrokerReadKind = 'positions' | 'balance' | 'orders'
 
 interface BrokerReadServiceDeps {
   resolveRuntimeConfig?: (identity: BrokerSettingsIdentity) => Promise<BrokerRuntimeConfig>
@@ -54,12 +54,14 @@ function isUnsupportedBrokerError(error: unknown) {
 }
 
 function createBrokerReadFailure(kind: BrokerReadKind) {
-  return new BrokerReadServiceError(
-    502,
-    kind === 'positions'
-      ? 'Broker positions could not be loaded'
-      : 'Broker balance could not be loaded',
-  )
+  switch (kind) {
+    case 'positions':
+      return new BrokerReadServiceError(502, 'Broker positions could not be loaded')
+    case 'balance':
+      return new BrokerReadServiceError(502, 'Broker balance could not be loaded')
+    case 'orders':
+      return new BrokerReadServiceError(502, 'Broker orders could not be loaded')
+  }
 }
 
 function createBrokerReadService<T>(
@@ -158,3 +160,9 @@ export function createBrokerReadBalanceService(deps: BrokerReadServiceDeps = {})
 }
 
 export const getBrokerBackedBalance = createBrokerReadBalanceService()
+
+export function createBrokerReadOrdersService(deps: BrokerReadServiceDeps = {}) {
+  return createBrokerReadService('orders', deps, async (adapter) => adapter.getOrders())
+}
+
+export const getBrokerBackedOrders = createBrokerReadOrdersService()

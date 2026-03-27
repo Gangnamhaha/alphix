@@ -20,7 +20,17 @@ describe('UpbitBrokerAdapter', () => {
     const balance = await adapter.getBalance()
     expect(balance.currency).toBe('KRW')
 
-    const order = await adapter.placeOrder({ symbol: 'KRW-BTC', side: 'BUY', quantity: 0.001, type: 'LIMIT', price: 97_200_000 })
+    const orders = await adapter.getOrders()
+    expect(orders.length).toBe(1)
+    expect(orders[0]?.symbol).toBe('KRW-BTC')
+
+    const order = await adapter.placeOrder({
+      symbol: 'KRW-BTC',
+      side: 'BUY',
+      quantity: 0.001,
+      type: 'LIMIT',
+      price: 97_200_000,
+    })
     expect(order.status).toBe('SUBMITTED')
     expect(order.orderId.startsWith('upb-')).toBe(true)
   })
@@ -32,8 +42,18 @@ describe('UpbitBrokerAdapter', () => {
     const adapter = new UpbitBrokerAdapter({ apiKey: 'up-key', secretKey: 'up-secret' })
     await adapter.connect()
 
-    await expectRejected(adapter.placeOrder({ symbol: 'NETERR', side: 'BUY', quantity: 1, type: 'MARKET' }))
-    await expectRejected(adapter.placeOrder({ symbol: 'KRW-BTC', side: 'BUY', quantity: 0.0001, type: 'LIMIT', price: 10_000 }))
+    await expectRejected(
+      adapter.placeOrder({ symbol: 'NETERR', side: 'BUY', quantity: 1, type: 'MARKET' }),
+    )
+    await expectRejected(
+      adapter.placeOrder({
+        symbol: 'KRW-BTC',
+        side: 'BUY',
+        quantity: 0.0001,
+        type: 'LIMIT',
+        price: 10_000,
+      }),
+    )
   })
 })
 

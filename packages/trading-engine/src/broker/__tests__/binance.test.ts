@@ -3,7 +3,11 @@ import { BinanceBrokerAdapter } from '../binance'
 
 describe('BinanceBrokerAdapter', () => {
   test('connect and disconnect lifecycle', async () => {
-    const adapter = new BinanceBrokerAdapter({ apiKey: 'bin-key', secretKey: 'bin-secret', isPaper: true })
+    const adapter = new BinanceBrokerAdapter({
+      apiKey: 'bin-key',
+      secretKey: 'bin-secret',
+      isPaper: true,
+    })
 
     await adapter.connect()
     expect(adapter.baseUrl).toBe('https://testnet.binance.vision')
@@ -13,13 +17,28 @@ describe('BinanceBrokerAdapter', () => {
   })
 
   test('returns balance and normalized order response', async () => {
-    const adapter = new BinanceBrokerAdapter({ apiKey: 'bin-key', secretKey: 'bin-secret', stepSize: 0.001, tickSize: 0.1 })
+    const adapter = new BinanceBrokerAdapter({
+      apiKey: 'bin-key',
+      secretKey: 'bin-secret',
+      stepSize: 0.001,
+      tickSize: 0.1,
+    })
     await adapter.connect()
 
     const balance = await adapter.getBalance()
     expect(balance.currency).toBe('USDT')
 
-    const order = await adapter.placeOrder({ symbol: 'BTCUSDT', side: 'BUY', quantity: 0.00276, type: 'LIMIT', price: 67180.49 })
+    const orders = await adapter.getOrders()
+    expect(orders.length).toBe(1)
+    expect(orders[0]?.symbol).toBe('BTCUSDT')
+
+    const order = await adapter.placeOrder({
+      symbol: 'BTCUSDT',
+      side: 'BUY',
+      quantity: 0.00276,
+      type: 'LIMIT',
+      price: 67180.49,
+    })
     expect(order.status).toBe('SUBMITTED')
     expect(order.filledPrice).toBe(67180.4)
   })
@@ -30,7 +49,9 @@ describe('BinanceBrokerAdapter', () => {
 
     const adapter = new BinanceBrokerAdapter({ apiKey: 'bin-key', secretKey: 'bin-secret' })
     await adapter.connect()
-    await expectRejected(adapter.placeOrder({ symbol: 'NETERR', side: 'BUY', quantity: 1, type: 'MARKET' }))
+    await expectRejected(
+      adapter.placeOrder({ symbol: 'NETERR', side: 'BUY', quantity: 1, type: 'MARKET' }),
+    )
   })
 })
 

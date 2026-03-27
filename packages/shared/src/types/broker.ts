@@ -13,6 +13,7 @@ export interface BrokerAdapter {
   disconnect(): Promise<void>
   getBalance(): Promise<Balance>
   getPositions(): Promise<Position[]>
+  getOrders(): Promise<BrokerOrder[]>
   placeOrder(order: OrderRequest): Promise<OrderResponse>
   cancelOrder(orderId: string): Promise<void>
   getMarketData(symbol: string): Promise<MarketData>
@@ -33,7 +34,26 @@ export interface OrderResponse {
   filledPrice: number
 }
 
-export type OrderStatus = 'PENDING' | 'SUBMITTED' | 'FILLED' | 'PARTIALLY_FILLED' | 'CANCELLED' | 'REJECTED'
+export type OrderStatus =
+  | 'PENDING'
+  | 'SUBMITTED'
+  | 'FILLED'
+  | 'PARTIALLY_FILLED'
+  | 'CANCELLED'
+  | 'REJECTED'
+
+export interface BrokerOrder {
+  orderId: string
+  symbol: string
+  side: OrderRequest['side']
+  quantity: number
+  price: number | null
+  type: OrderRequest['type']
+  status: OrderStatus
+  filledQuantity: number
+  filledPrice: number
+  createdAt: Date
+}
 
 export interface Position {
   symbol: string
@@ -60,7 +80,14 @@ export interface MarketData {
 }
 
 export function isBrokerType(value: unknown): value is BrokerType {
-  return value === 'kis' || value === 'kis-overseas' || value === 'alpaca' || value === 'kiwoom' || value === 'binance' || value === 'upbit'
+  return (
+    value === 'kis' ||
+    value === 'kis-overseas' ||
+    value === 'alpaca' ||
+    value === 'kiwoom' ||
+    value === 'binance' ||
+    value === 'upbit'
+  )
 }
 
 export function isMarket(value: unknown): value is Market {

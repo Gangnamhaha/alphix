@@ -1,4 +1,12 @@
-import type { Balance, BrokerAdapter, MarketData, OrderRequest, OrderResponse, Position } from '@alphix/shared'
+import type {
+  Balance,
+  BrokerAdapter,
+  BrokerOrder,
+  MarketData,
+  OrderRequest,
+  OrderResponse,
+  Position,
+} from '@alphix/shared'
 
 type AlpacaConfig = {
   apiKey: string
@@ -22,7 +30,10 @@ export class AlpacaBrokerAdapter implements BrokerAdapter {
     if (!this.apiKey.trim() || !this.secretKey.trim()) {
       throw new Error('Alpaca credentials are required')
     }
-    if (this.apiKey.toLowerCase().includes('invalid') || this.secretKey.toLowerCase().includes('invalid')) {
+    if (
+      this.apiKey.toLowerCase().includes('invalid') ||
+      this.secretKey.toLowerCase().includes('invalid')
+    ) {
       throw new Error('Alpaca credentials are invalid')
     }
     this.connected = true
@@ -51,6 +62,24 @@ export class AlpacaBrokerAdapter implements BrokerAdapter {
         currentPrice: 508.42,
         pnl: 63,
         pnlPercent: 1.25,
+      },
+    ]
+  }
+
+  async getOrders(): Promise<BrokerOrder[]> {
+    this.ensureConnected()
+    return [
+      {
+        orderId: 'alp-ord-001',
+        symbol: 'SPY',
+        side: 'BUY',
+        quantity: 1,
+        price: 508.42,
+        type: 'LIMIT',
+        status: 'SUBMITTED',
+        filledQuantity: 0,
+        filledPrice: 0,
+        createdAt: new Date('2026-03-25T00:00:00.000Z'),
       },
     ]
   }

@@ -1,4 +1,12 @@
-import type { Balance, BrokerAdapter, MarketData, OrderRequest, OrderResponse, Position } from '@alphix/shared'
+import type {
+  Balance,
+  BrokerAdapter,
+  BrokerOrder,
+  MarketData,
+  OrderRequest,
+  OrderResponse,
+  Position,
+} from '@alphix/shared'
 
 type BinanceConfig = {
   apiKey: string
@@ -28,7 +36,10 @@ export class BinanceBrokerAdapter implements BrokerAdapter {
     if (!this.apiKey.trim() || !this.secretKey.trim()) {
       throw new Error('Binance credentials are required')
     }
-    if (this.apiKey.toLowerCase().includes('invalid') || this.secretKey.toLowerCase().includes('invalid')) {
+    if (
+      this.apiKey.toLowerCase().includes('invalid') ||
+      this.secretKey.toLowerCase().includes('invalid')
+    ) {
       throw new Error('Binance credentials are invalid')
     }
     this.connected = true
@@ -57,6 +68,24 @@ export class BinanceBrokerAdapter implements BrokerAdapter {
         currentPrice: 67_180,
         pnl: 50.96,
         pnlPercent: 1.48,
+      },
+    ]
+  }
+
+  async getOrders(): Promise<BrokerOrder[]> {
+    this.ensureConnected()
+    return [
+      {
+        orderId: 'bin-ord-001',
+        symbol: 'BTCUSDT',
+        side: 'BUY',
+        quantity: 0.002,
+        price: 67180.4,
+        type: 'LIMIT',
+        status: 'SUBMITTED',
+        filledQuantity: 0,
+        filledPrice: 0,
+        createdAt: new Date('2026-03-25T00:00:00.000Z'),
       },
     ]
   }
@@ -128,7 +157,13 @@ function adjustToTick(value: number, tickSize: number): number {
 async function hmacSha256Hex(secret: string, payload: string): Promise<string> {
   const keyData = new TextEncoder().encode(secret)
   const messageData = new TextEncoder().encode(payload)
-  const key = await crypto.subtle.importKey('raw', keyData, { name: 'HMAC', hash: 'SHA-256' }, false, ['sign'])
+  const key = await crypto.subtle.importKey(
+    'raw',
+    keyData,
+    { name: 'HMAC', hash: 'SHA-256' },
+    false,
+    ['sign'],
+  )
   const signature = await crypto.subtle.sign('HMAC', key, messageData)
   return Array.from(new Uint8Array(signature))
     .map((byte) => byte.toString(16).padStart(2, '0'))

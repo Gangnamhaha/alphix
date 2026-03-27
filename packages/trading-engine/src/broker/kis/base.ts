@@ -1,4 +1,12 @@
-import type { Balance, BrokerAdapter, MarketData, OrderRequest, OrderResponse, Position } from '@alphix/shared'
+import type {
+  Balance,
+  BrokerAdapter,
+  BrokerOrder,
+  MarketData,
+  OrderRequest,
+  OrderResponse,
+  Position,
+} from '@alphix/shared'
 
 type KisConfig = {
   apiKey: string
@@ -52,6 +60,7 @@ export abstract class BaseKisBrokerAdapter implements BrokerAdapter {
 
   abstract getBalance(): Promise<Balance>
   abstract getPositions(): Promise<Position[]>
+  abstract getOrders(): Promise<BrokerOrder[]>
   abstract placeOrder(order: OrderRequest): Promise<OrderResponse>
   abstract cancelOrder(orderId: string): Promise<void>
   abstract getMarketData(symbol: string): Promise<MarketData>
@@ -87,7 +96,9 @@ export abstract class BaseKisBrokerAdapter implements BrokerAdapter {
   }
 
   protected shouldSimulateNetworkError(seed: string): boolean {
-    return seed.toUpperCase().includes('NETERR') || this.apiKey.toLowerCase().includes('network-error')
+    return (
+      seed.toUpperCase().includes('NETERR') || this.apiKey.toLowerCase().includes('network-error')
+    )
   }
 
   protected nextOrderId(prefix: string): string {
@@ -97,14 +108,19 @@ export abstract class BaseKisBrokerAdapter implements BrokerAdapter {
   }
 
   protected getBaseUrl(): string {
-    return this.isPaper ? 'https://openapivts.koreainvestment.com:29443' : 'https://openapi.koreainvestment.com:9443'
+    return this.isPaper
+      ? 'https://openapivts.koreainvestment.com:29443'
+      : 'https://openapi.koreainvestment.com:9443'
   }
 
   private ensureValidCredentials(): void {
     if (!this.apiKey.trim() || !this.secretKey.trim()) {
       throw new Error('KIS credentials are required')
     }
-    if (this.apiKey.toLowerCase().includes('invalid') || this.secretKey.toLowerCase().includes('invalid')) {
+    if (
+      this.apiKey.toLowerCase().includes('invalid') ||
+      this.secretKey.toLowerCase().includes('invalid')
+    ) {
       throw new Error('KIS credentials are invalid')
     }
   }

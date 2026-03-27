@@ -1,4 +1,12 @@
-import type { Balance, BrokerAdapter, MarketData, OrderRequest, OrderResponse, Position } from '@alphix/shared'
+import type {
+  Balance,
+  BrokerAdapter,
+  BrokerOrder,
+  MarketData,
+  OrderRequest,
+  OrderResponse,
+  Position,
+} from '@alphix/shared'
 
 type UpbitConfig = {
   apiKey: string
@@ -24,7 +32,10 @@ export class UpbitBrokerAdapter implements BrokerAdapter {
     if (!this.apiKey.trim() || !this.secretKey.trim()) {
       throw new Error('Upbit credentials are required')
     }
-    if (this.apiKey.toLowerCase().includes('invalid') || this.secretKey.toLowerCase().includes('invalid')) {
+    if (
+      this.apiKey.toLowerCase().includes('invalid') ||
+      this.secretKey.toLowerCase().includes('invalid')
+    ) {
       throw new Error('Upbit credentials are invalid')
     }
     this.connected = true
@@ -53,6 +64,24 @@ export class UpbitBrokerAdapter implements BrokerAdapter {
         currentPrice: 97_200_000,
         pnl: 8_750,
         pnlPercent: 0.73,
+      },
+    ]
+  }
+
+  async getOrders(): Promise<BrokerOrder[]> {
+    this.ensureConnected()
+    return [
+      {
+        orderId: 'upb-ord-001',
+        symbol: 'KRW-BTC',
+        side: 'BUY',
+        quantity: 0.001,
+        price: 97_200_000,
+        type: 'LIMIT',
+        status: 'SUBMITTED',
+        filledQuantity: 0,
+        filledPrice: 0,
+        createdAt: new Date('2026-03-25T00:00:00.000Z'),
       },
     ]
   }
@@ -123,10 +152,7 @@ export class UpbitBrokerAdapter implements BrokerAdapter {
 }
 
 function toBase64Url(value: string): string {
-  return encodeBase64(value)
-    .replace(/\+/g, '-')
-    .replace(/\//g, '_')
-    .replace(/=+$/g, '')
+  return encodeBase64(value).replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/g, '')
 }
 
 function encodeBase64(value: string): string {
@@ -141,7 +167,13 @@ function encodeBase64(value: string): string {
 async function hmacSha256Base64(secret: string, payload: string): Promise<string> {
   const keyData = new TextEncoder().encode(secret)
   const messageData = new TextEncoder().encode(payload)
-  const key = await crypto.subtle.importKey('raw', keyData, { name: 'HMAC', hash: 'SHA-256' }, false, ['sign'])
+  const key = await crypto.subtle.importKey(
+    'raw',
+    keyData,
+    { name: 'HMAC', hash: 'SHA-256' },
+    false,
+    ['sign'],
+  )
   const signature = await crypto.subtle.sign('HMAC', key, messageData)
 
   let binary = ''

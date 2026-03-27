@@ -1,10 +1,11 @@
 import { describe, expect, test } from 'bun:test'
 
-import type { BrokerAdapter, Position } from '@alphix/shared'
+import type { BrokerAdapter, BrokerOrder, Position } from '@alphix/shared'
 
 import {
   BrokerReadServiceError,
   createBrokerReadBalanceService,
+  createBrokerReadOrdersService,
   createBrokerReadPositionsService,
 } from './broker-read-service'
 
@@ -295,12 +296,81 @@ describe('createBrokerReadBalanceService', () => {
   })
 })
 
+describe('createBrokerReadOrdersService', () => {
+  test('returns adapter-backed orders and disconnects after success', async () => {
+    const orders: BrokerOrder[] = [
+      {
+        orderId: 'ord_123',
+        symbol: 'AAPL',
+        side: 'BUY',
+        quantity: 2,
+        price: 101.5,
+        type: 'LIMIT',
+        status: 'SUBMITTED',
+        filledQuantity: 0,
+        filledPrice: 0,
+        createdAt: new Date('2026-03-25T00:00:00.000Z'),
+      },
+    ]
+    const events: string[] = []
+
+    const service = createBrokerReadOrdersService({
+      resolveRuntimeConfig: async () => runtimeConfig,
+      requireEncryptionKey: () => 'x'.repeat(32),
+      decryptCredential: (value) => `${value}-plain`,
+      createAdapter: () =>
+        createAdapterDouble({
+          async connect() {
+            events.push('connect')
+          },
+          async getOrders() {
+            events.push('getOrders')
+            return orders
+          },
+          async disconnect() {
+            events.push('disconnect')
+          },
+        }),
+    })
+
+    expect(await service(identity)).toEqual(orders)
+    expect(events).toEqual(['connect', 'getOrders', 'disconnect'])
+  })
+
+  test('returns 502 when getOrders fails and still disconnects', async () => {
+    const events: string[] = []
+
+    const service = createBrokerReadOrdersService({
+      resolveRuntimeConfig: async () => runtimeConfig,
+      requireEncryptionKey: () => 'x'.repeat(32),
+      decryptCredential: (value) => `${value}-plain`,
+      createAdapter: () =>
+        createAdapterDouble({
+          async connect() {
+            events.push('connect')
+          },
+          async getOrders() {
+            events.push('getOrders')
+            throw new Error('provider timeout')
+          },
+          async disconnect() {
+            events.push('disconnect')
+          },
+        }),
+    })
+
+    await expectServiceError(service(identity), 502, 'Broker orders could not be loaded')
+    expect(events).toEqual(['connect', 'getOrders', 'disconnect'])
+  })
+})
+
 function createAdapterDouble(overrides: Partial<BrokerAdapter>): BrokerAdapter {
   return {
     connect: overrides.connect ?? (async () => {}),
     disconnect: overrides.disconnect ?? (async () => {}),
     getBalance: overrides.getBalance ?? (async () => ({ total: 0, available: 0, currency: 'USD' })),
     getPositions: overrides.getPositions ?? (async () => []),
+    getOrders: overrides.getOrders ?? (async () => []),
     placeOrder:
       overrides.placeOrder ??
       (async () => ({ orderId: '1', status: 'SUBMITTED', filledQuantity: 0, filledPrice: 0 })),

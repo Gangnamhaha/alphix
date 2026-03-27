@@ -1,4 +1,11 @@
-import type { Balance, MarketData, OrderRequest, OrderResponse, Position } from '@alphix/shared'
+import type {
+  Balance,
+  BrokerOrder,
+  MarketData,
+  OrderRequest,
+  OrderResponse,
+  Position,
+} from '@alphix/shared'
 import { BaseKisBrokerAdapter, NetworkSimulationError } from '../kis/base'
 
 export class KisOverseasBrokerAdapter extends BaseKisBrokerAdapter {
@@ -28,6 +35,26 @@ export class KisOverseasBrokerAdapter extends BaseKisBrokerAdapter {
           currentPrice: 191.35,
           pnl: 103,
           pnlPercent: 2.77,
+        },
+      ]
+    })
+  }
+
+  async getOrders(): Promise<BrokerOrder[]> {
+    return this.authenticatedRequest(async () => {
+      await wait(8)
+      return [
+        {
+          orderId: 'kis-us-ord-001',
+          symbol: 'AAPL',
+          side: 'BUY',
+          quantity: 2,
+          price: 191.35,
+          type: 'LIMIT',
+          status: 'SUBMITTED',
+          filledQuantity: 0,
+          filledPrice: 0,
+          createdAt: new Date('2026-03-25T00:00:00.000Z'),
         },
       ]
     })

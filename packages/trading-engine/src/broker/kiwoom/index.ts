@@ -1,4 +1,12 @@
-import type { Balance, BrokerAdapter, MarketData, OrderRequest, OrderResponse, Position } from '@alphix/shared'
+import type {
+  Balance,
+  BrokerAdapter,
+  BrokerOrder,
+  MarketData,
+  OrderRequest,
+  OrderResponse,
+  Position,
+} from '@alphix/shared'
 
 type KiwoomConfig = {
   apiKey: string
@@ -54,6 +62,24 @@ export class KiwoomBrokerAdapter implements BrokerAdapter {
         currentPrice: 205_500,
         pnl: 72_000,
         pnlPercent: 2.24,
+      },
+    ]
+  }
+
+  async getOrders(): Promise<BrokerOrder[]> {
+    this.ensureReady()
+    return [
+      {
+        orderId: 'kiwoom-ord-001',
+        symbol: '035420',
+        side: 'BUY',
+        quantity: 1,
+        price: 205_500,
+        type: 'LIMIT',
+        status: 'SUBMITTED',
+        filledQuantity: 0,
+        filledPrice: 0,
+        createdAt: new Date('2026-03-25T00:00:00.000Z'),
       },
     ]
   }

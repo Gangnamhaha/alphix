@@ -3,7 +3,11 @@ import { KiwoomBrokerAdapter } from '../kiwoom'
 
 describe('KiwoomBrokerAdapter', () => {
   test('connect and disconnect lifecycle', async () => {
-    const adapter = new KiwoomBrokerAdapter({ apiKey: 'kiwoom-key', secretKey: 'kiwoom-secret', proxyConnected: true })
+    const adapter = new KiwoomBrokerAdapter({
+      apiKey: 'kiwoom-key',
+      secretKey: 'kiwoom-secret',
+      proxyConnected: true,
+    })
 
     await adapter.connect()
     const balance = await adapter.getBalance()
@@ -14,24 +18,48 @@ describe('KiwoomBrokerAdapter', () => {
   })
 
   test('returns balance and order response', async () => {
-    const adapter = new KiwoomBrokerAdapter({ apiKey: 'kiwoom-key', secretKey: 'kiwoom-secret', proxyConnected: true })
+    const adapter = new KiwoomBrokerAdapter({
+      apiKey: 'kiwoom-key',
+      secretKey: 'kiwoom-secret',
+      proxyConnected: true,
+    })
     await adapter.connect()
 
     const balance = await adapter.getBalance()
     expect(balance.currency).toBe('KRW')
 
-    const order = await adapter.placeOrder({ symbol: '035420', side: 'BUY', quantity: 1, type: 'LIMIT', price: 205_500 })
+    const orders = await adapter.getOrders()
+    expect(orders.length).toBe(1)
+    expect(orders[0]?.symbol).toBe('035420')
+
+    const order = await adapter.placeOrder({
+      symbol: '035420',
+      side: 'BUY',
+      quantity: 1,
+      type: 'LIMIT',
+      price: 205_500,
+    })
     expect(order.status).toBe('SUBMITTED')
     expect(order.orderId.startsWith('kiwoom-')).toBe(true)
   })
 
   test('graceful proxy error and network error', async () => {
-    const noProxy = new KiwoomBrokerAdapter({ apiKey: 'kiwoom-key', secretKey: 'kiwoom-secret', proxyConnected: false })
+    const noProxy = new KiwoomBrokerAdapter({
+      apiKey: 'kiwoom-key',
+      secretKey: 'kiwoom-secret',
+      proxyConnected: false,
+    })
     await expectRejected(noProxy.connect())
 
-    const adapter = new KiwoomBrokerAdapter({ apiKey: 'kiwoom-key', secretKey: 'kiwoom-secret', proxyConnected: true })
+    const adapter = new KiwoomBrokerAdapter({
+      apiKey: 'kiwoom-key',
+      secretKey: 'kiwoom-secret',
+      proxyConnected: true,
+    })
     await adapter.connect()
-    await expectRejected(adapter.placeOrder({ symbol: 'NETERR', side: 'BUY', quantity: 1, type: 'MARKET' }))
+    await expectRejected(
+      adapter.placeOrder({ symbol: 'NETERR', side: 'BUY', quantity: 1, type: 'MARKET' }),
+    )
   })
 })
 
