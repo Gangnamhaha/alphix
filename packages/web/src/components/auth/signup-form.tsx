@@ -9,10 +9,6 @@ import { createClient } from '@/lib/supabase/client'
 
 type FormSubmitEvent = Parameters<NonNullable<React.ComponentProps<'form'>['onSubmit']>>[0]
 
-function hasPublicSupabaseEnv() {
-  return Boolean(process.env.NEXT_PUBLIC_SUPABASE_URL && process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY)
-}
-
 export function SignupForm() {
   const router = useRouter()
   const [name, setName] = useState('')
@@ -21,81 +17,48 @@ export function SignupForm() {
   const [passwordConfirm, setPasswordConfirm] = useState('')
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
-  const [success, setSuccess] = useState<string | null>(null)
-
-  const proceedAfterSignup = (hasSession: boolean, profileSyncDeferred: boolean) => {
-    if (hasSession) {
-      const destination = profileSyncDeferred ? '/dashboard?profile=deferred' : '/dashboard'
-      router.replace(destination)
-      router.refresh()
-      return
-    }
-
-    const loginQuery = profileSyncDeferred
-      ? '/login?signup=success&profile=deferred'
-      : '/login?signup=success'
-    setSuccess('회원가입이 완료되었습니다. 이메일 인증 후 로그인해 주세요.')
-    router.replace(loginQuery)
-    router.refresh()
-  }
 
   const handleSubmit = async (event: FormSubmitEvent) => {
     event.preventDefault()
     setError(null)
-    setSuccess(null)
 
     if (password !== passwordConfirm) {
       setError('비밀번호 확인이 일치하지 않습니다.')
       return
     }
 
-    if (!hasPublicSupabaseEnv()) {
-      setError('현재 환경에서는 회원가입을 지원하지 않습니다.')
-      return
-    }
-
     setLoading(true)
 
     try {
-      const supabase = createClient()
-      const { data, error: signUpError } = await supabase.auth.signUp({
-        email: email.trim(),
-        password,
-        options: {
-          data: {
-            name: name.trim(),
-          },
-        },
-      })
-
-      if (signUpError) {
-        setError(signUpError.message)
-        return
-      }
-
-      const profileResponse = await fetch('/api/auth/register-profile', {
+      const response = await fetch('/api/auth/signup', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ email: email.trim(), name: name.trim() }),
+        body: JSON.stringify({ email: email.trim(), password, name: name.trim() }),
       })
 
-      if (!profileResponse.ok) {
-        const profilePayload = (await profileResponse.json().catch(() => null)) as {
-          code?: string
-        } | null
-        const profileSyncDeferred =
-          profileResponse.status === 503 && profilePayload?.code === 'PROFILE_SYNC_UNAVAILABLE'
+      const payload = (await response.json()) as { error?: string }
 
-        if (!profileSyncDeferred) {
-          setError('가입 프로필 저장 중 문제가 발생했습니다. 잠시 후 다시 시도해 주세요.')
-          return
-        }
-
-        proceedAfterSignup(Boolean(data.session), true)
+      if (!response.ok) {
+        setError(payload.error ?? '회원가입 중 문제가 발생했습니다. 잠시 후 다시 시도해 주세요.')
         return
       }
 
-      proceedAfterSignup(Boolean(data.session), false)
+      const supabase = createClient()
+      const { error: signInError } = await supabase.auth.signInWithPassword({
+        email: email.trim(),
+        password,
+      })
+
+      if (signInError) {
+        setError(
+          '가입은 완료됐으나 자동 로그인에 실패했습니다. 로그인 페이지에서 다시 시도해 주세요.',
+        )
+        router.replace('/login?signup=success')
+        return
+      }
+
+      router.replace('/dashboard')
+      router.refresh()
     } catch {
       setError('회원가입 중 문제가 발생했습니다. 잠시 후 다시 시도해 주세요.')
     } finally {
@@ -140,7 +103,6 @@ export function SignupForm() {
         required
       />
       {error ? <p className="text-sm text-red-600">{error}</p> : null}
-      {success ? <p className="text-sm text-green-700">{success}</p> : null}
       <Button className="w-full" type="submit" disabled={loading}>
         {loading ? '가입 처리 중...' : '무료로 시작하기'}
       </Button>
